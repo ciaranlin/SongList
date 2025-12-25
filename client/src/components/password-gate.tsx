@@ -101,7 +101,7 @@ export function PasswordGate({ onUnlock, correctPassword }: PasswordGateProps) {
         </form>
 
         <p className="text-xs text-center text-muted-foreground mt-4">
-          默认密码: vtuber123
+          
         </p>
       </div>
     </div>

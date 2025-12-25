@@ -210,7 +210,7 @@ export function FilterBar({ config, songs, onFilteredSongsChange }: FilterBarPro
               data-testid="button-captain-filter"
             >
               <Anchor className="w-4 h-4" />
-              <span className="hidden sm:inline">仅舰长</span>
+              <span className="hidden sm:inline">舰长点歌</span>
             </Button>
 
             {/* Clear Filters */}

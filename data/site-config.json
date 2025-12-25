@@ -32,7 +32,7 @@
     "mobileTrigger": "always"
   },
   "heroCards": {
-    "mode": "hoverReveal",
+    "mode": "off",
     "heroShiftPx": 0,
     "gapPx": 32,
     "animationDurationMs": 400,
@@ -40,7 +40,7 @@
   },
   "heroHotspot": {
     "enabled": true,
-    "target": "avatar",
+    "target": "title",
     "sizePx": 80,
     "showHint": true,
     "hintText": "移入展开",
@@ -66,28 +66,14 @@
   "cards": [
     {
       "id": "card-1",
-      "title": "关于我",
-      "body": "一个热爱音乐的虚拟歌手，喜欢和大家分享歌曲！",
+      "title": "日常碎碎念",
+      "body": "吃饱了脾气就会很好",
       "links": [
         {
-          "id": "link-1",
-          "url": "https://twitter.com",
-          "label": "推特",
-          "icon": "twitter",
-          "openInNewTab": true,
-          "styles": {
-            "padding": "6px 12px",
-            "borderRadius": "9999px",
-            "background": "rgba(255,255,255,0.45)",
-            "border": "1px solid rgba(255,255,255,0.35)",
-            "hoverBackground": "rgba(255,255,255,0.60)"
-          }
-        },
-        {
-          "id": "link-2",
-          "url": "https://youtube.com",
-          "label": "油管",
-          "icon": "youtube",
+          "id": "link-1766665947939",
+          "url": "https://live.bilibili.com/1916955256",
+          "label": "直播间",
+          "icon": "bilibili",
           "openInNewTab": true,
           "styles": {
             "padding": "6px 12px",
@@ -116,22 +102,7 @@
       "id": "card-2",
       "title": "点歌说明",
       "body": "舰长可以在直播期间点歌哦！",
-      "links": [
-        {
-          "id": "link-3",
-          "url": "https://bilibili.com",
-          "label": "B站",
-          "icon": "bilibili",
-          "openInNewTab": true,
-          "styles": {
-            "padding": "6px 12px",
-            "borderRadius": "9999px",
-            "background": "rgba(255,255,255,0.45)",
-            "border": "1px solid rgba(255,255,255,0.35)",
-            "hoverBackground": "rgba(255,255,255,0.60)"
-          }
-        }
-      ],
+      "links": [],
       "styles": {
         "padding": "16px",
         "borderRadius": "16px",
@@ -158,5 +129,5 @@
     "searchInputWidth": "220px",
     "spacing": "12px"
   },
-  "adminPassword": "vtuber123"
+  "adminPassword": "qwe123"
 }

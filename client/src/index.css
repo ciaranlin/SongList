@@ -302,3 +302,21 @@
     background: rgba(0, 0, 0, 0.25);
   }
 }
+
+/* === 移除头像上的圆形遮罩视觉效果（保留交互逻辑） === */
+[data-testid="hotspot-avatar"] {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+/* 如果有 hover/active 状态也一并清掉 */
+[data-testid="hotspot-avatar"]:hover,
+[data-testid="hotspot-avatar"]:active {
+  background: transparent !important;
+}
+/* === 隐藏“移入展开”提示文字（保留 hover 功能） === */
+[data-testid="hotspot-avatar"] * {
+  display: none !important;
+}

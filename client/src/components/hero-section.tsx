@@ -210,17 +210,8 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
   }, [isHoverMode, isMobile]);
 
   const handleCardsLeave = useCallback(() => {
-    if (!isHoverMode || isMobile) return;
-    
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-    
-    debounceTimerRef.current = setTimeout(() => {
-      setExpanded(false);
-      debounceTimerRef.current = null;
-    }, heroHotspot.debounceMs);
-  }, [isHoverMode, isMobile, heroHotspot.debounceMs]);
+    // Intentionally no-op: closing is handled by leaving the whole panel area.
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -290,6 +281,22 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
           >
             {banner.subtitle}
           </p>
+
+          {/* small hover hint under subtitle */}
+          {isHoverMode && heroHotspot.enabled && hasCards && (
+            <p
+              style={{
+                color: textColor,
+                fontSize: "11px",
+                opacity: 0.6,
+                marginTop: "-8px",
+                marginBottom: "12px",
+              }}
+            >
+              {heroHotspot.hintText || "移入显示更多"}
+            </p>
+          )}
+
         </div>
 
         {hasCards && !isOffMode && (
@@ -345,12 +352,38 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
   }
 
   const hotspotHandlers = heroHotspot.enabled && isHoverMode
-    ? { onMouseEnter: handleHotspotEnter, onMouseLeave: handleHotspotLeave }
+    ? { onMouseEnter: handleHotspotEnter }
     : {};
 
   const legacyHoverHandlers = !heroHotspot.enabled && isHoverMode
     ? { onMouseEnter: handleHotspotEnter, onMouseLeave: handleHotspotLeave }
     : {};
+
+  // When using a small hotspot to open, keep the panel open while the mouse stays within
+  // the whole hero+cards area (including the gap), and only close when leaving this area.
+  const handlePanelEnter = useCallback(() => {
+    if (!isHoverMode || isMobile) return;
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+  }, [isHoverMode, isMobile]);
+
+  const handlePanelLeave = useCallback(() => {
+    if (!isHoverMode || isMobile) return;
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      setExpanded(false);
+      debounceTimerRef.current = null;
+    }, heroHotspot.debounceMs);
+  }, [isHoverMode, isMobile, heroHotspot.debounceMs]);
+
+  const panelHoverHandlers = heroHotspot.enabled && isHoverMode
+    ? { onMouseEnter: handlePanelEnter, onMouseLeave: handlePanelLeave }
+    : {};
+
 
   return (
     <div 
@@ -362,6 +395,7 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
     >
       <div 
         className="w-full flex items-center justify-center py-12 px-8 relative"
+        {...panelHoverHandlers}
         style={{ minHeight: "280px" }}
       >
         <div 
@@ -375,7 +409,7 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
         >
           <div 
             ref={avatarRef}
-            className="w-28 h-28 rounded-full overflow-hidden mb-6 flex items-center justify-center relative"
+            className="w-40 h-40 rounded-full overflow-hidden mb-6 flex items-center justify-center relative"
             style={{
               background: "rgba(255,255,255,0.22)",
               border: "2px solid rgba(255,255,255,0.35)",
@@ -497,7 +531,6 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
               maxWidth: "360px",
             }}
             onMouseEnter={handleCardsEnter}
-            onMouseLeave={handleCardsLeave}
           >
             {cards.map((card) => (
               <HoverCard key={card.id} card={card} textColor={textColor} />
