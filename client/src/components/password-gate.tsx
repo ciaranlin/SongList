@@ -56,8 +56,8 @@ export function PasswordGate({ onUnlock, correctPassword }: PasswordGateProps) {
           >
             <Lock className="w-8 h-8 text-foreground" />
           </div>
-          <h2 className="text-xl font-semibold text-foreground">Admin Access</h2>
-          <p className="text-sm text-muted-foreground mt-1">Enter password to continue</p>
+          <h2 className="text-xl font-semibold text-foreground">管理员验证</h2>
+          <p className="text-sm text-muted-foreground mt-1">请输入密码继续</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -66,7 +66,7 @@ export function PasswordGate({ onUnlock, correctPassword }: PasswordGateProps) {
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter password"
+              placeholder="请输入密码"
               className={`h-12 rounded-xl pr-12 ${error ? "border-destructive" : ""}`}
               style={{ 
                 background: "rgba(255,255,255,0.5)",
@@ -87,7 +87,7 @@ export function PasswordGate({ onUnlock, correctPassword }: PasswordGateProps) {
 
           {error && (
             <p className="text-sm text-destructive text-center" data-testid="text-error">
-              Incorrect password
+              密码错误
             </p>
           )}
 
@@ -96,12 +96,12 @@ export function PasswordGate({ onUnlock, correctPassword }: PasswordGateProps) {
             className="w-full h-12 rounded-xl"
             data-testid="button-unlock"
           >
-            Unlock
+            进入
           </Button>
         </form>
 
         <p className="text-xs text-center text-muted-foreground mt-4">
-          Default password: vtuber123
+          默认密码: vtuber123
         </p>
       </div>
     </div>

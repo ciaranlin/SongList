@@ -10,9 +10,26 @@ import { SongTable } from "@/components/song-table";
 import { Button } from "@/components/ui/button";
 import { Settings, ListMusic } from "lucide-react";
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+  
+  return isMobile;
+}
+
 export default function Home() {
   const [isHeroHovered, setIsHeroHovered] = useState(false);
   const [filteredSongs, setFilteredSongs] = useState<Song[]>([]);
+  const isMobile = useIsMobile();
 
   // Fetch config from API
   const { data: config = defaultConfig, isLoading: configLoading } = useQuery<SiteConfig>({
@@ -36,14 +53,18 @@ export default function Home() {
   }, []);
 
   const handleHeroMouseEnter = useCallback(() => {
-    if (config.hoverBehavior.enabled && config.hoverBehavior.showOnHeroHover) {
+    if (config.hoverBehavior.enabled && config.hoverBehavior.showOnHeroHover && !isMobile) {
       setIsHeroHovered(true);
     }
-  }, [config.hoverBehavior]);
+  }, [config.hoverBehavior, isMobile]);
 
   const handleHeroMouseLeave = useCallback(() => {
     setIsHeroHovered(false);
   }, []);
+
+  // Show entry icons based on config
+  const showConfigEntry = config.entryIcons?.showConfigEntry ?? true;
+  const showYuEntry = config.entryIcons?.showYuEntry ?? true;
 
   return (
     <ConfigProvider initialConfig={config}>
@@ -53,29 +74,35 @@ export default function Home() {
           backgroundColor: config.theme.background,
         }}
       >
-        {/* Corner Admin Links */}
-        <div className="fixed top-4 right-4 z-50 flex gap-2">
-          <Link href="/config">
-            <Button 
-              variant="secondary" 
-              size="icon" 
-              className="rounded-xl vtuber-glass border-0"
-              data-testid="link-config"
-            >
-              <Settings className="w-4 h-4" />
-            </Button>
-          </Link>
-          <Link href="/yu">
-            <Button 
-              variant="secondary" 
-              size="icon" 
-              className="rounded-xl vtuber-glass border-0"
-              data-testid="link-admin"
-            >
-              <ListMusic className="w-4 h-4" />
-            </Button>
-          </Link>
-        </div>
+        {/* Corner Admin Links - controlled by config */}
+        {(showConfigEntry || showYuEntry) && (
+          <div className="fixed top-3 right-3 sm:top-4 sm:right-4 z-50 flex gap-2">
+            {showConfigEntry && (
+              <Link href="/config">
+                <Button 
+                  variant="secondary" 
+                  size="icon" 
+                  className="rounded-xl vtuber-glass border-0"
+                  data-testid="link-config"
+                >
+                  <Settings className="w-4 h-4" />
+                </Button>
+              </Link>
+            )}
+            {showYuEntry && (
+              <Link href="/yu">
+                <Button 
+                  variant="secondary" 
+                  size="icon" 
+                  className="rounded-xl vtuber-glass border-0"
+                  data-testid="link-admin"
+                >
+                  <ListMusic className="w-4 h-4" />
+                </Button>
+              </Link>
+            )}
+          </div>
+        )}
 
         {/* Main Content */}
         <div className="flex flex-col items-center">
@@ -85,12 +112,14 @@ export default function Home() {
             isHovered={isHeroHovered}
             onMouseEnter={handleHeroMouseEnter}
             onMouseLeave={handleHeroMouseLeave}
+            isMobile={isMobile}
           />
 
           {/* Hover-reveal Cards */}
           <HoverCards 
             config={config}
             isVisible={isHeroHovered}
+            isMobile={isMobile}
           />
 
           {/* Filter Bar */}

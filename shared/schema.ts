@@ -56,6 +56,25 @@ export const cardSchema = z.object({
 
 export type Card = z.infer<typeof cardSchema>;
 
+// Animation configuration for card area
+export const cardAnimationSchema = z.object({
+  type: z.enum(["none", "fade", "slide", "scale", "fadeSlide"]).default("fade"),
+  durationMs: z.number().default(200),
+  delayMs: z.number().default(0),
+  trigger: z.enum(["hover", "always", "click"]).default("hover"),
+  mobileTrigger: z.enum(["always", "click"]).default("always"),
+}).default({});
+
+export type CardAnimation = z.infer<typeof cardAnimationSchema>;
+
+// UI entry icons configuration
+export const entryIconsSchema = z.object({
+  showYuEntry: z.boolean().default(true),
+  showConfigEntry: z.boolean().default(true),
+}).default({});
+
+export type EntryIcons = z.infer<typeof entryIconsSchema>;
+
 // Site configuration schema
 export const siteConfigSchema = z.object({
   theme: z.object({
@@ -66,9 +85,9 @@ export const siteConfigSchema = z.object({
   }).default({}),
   banner: z.object({
     avatar: z.string().default(""),
-    title: z.string().default("VTuber Song List"),
-    subtitle: z.string().default("Welcome to my song collection"),
-    hint: z.string().default("Hover to see more"),
+    title: z.string().default("歌单列表"),
+    subtitle: z.string().default("欢迎来到我的歌单"),
+    hint: z.string().default("移入查看更多"),
     styles: z.object({
       titleSize: z.string().default("44px"),
       titleWeight: z.string().default("700"),
@@ -83,6 +102,8 @@ export const siteConfigSchema = z.object({
     fadeInDuration: z.number().default(250),
     fadeOutDuration: z.number().default(200),
   }).default({}),
+  cardAnimation: cardAnimationSchema,
+  entryIcons: entryIconsSchema,
   cards: z.array(cardSchema).default([]),
   layout: z.object({
     contentMaxWidth: z.string().default("1200px"),
@@ -100,7 +121,7 @@ export const siteConfigSchema = z.object({
 
 export type SiteConfig = z.infer<typeof siteConfigSchema>;
 
-// Default configuration
+// Default configuration with Chinese text
 export const defaultConfig: SiteConfig = {
   theme: {
     background: "#A9BAC4",
@@ -110,9 +131,9 @@ export const defaultConfig: SiteConfig = {
   },
   banner: {
     avatar: "",
-    title: "VTuber Song List",
-    subtitle: "Welcome to my song collection",
-    hint: "Hover to see more info",
+    title: "歌单列表",
+    subtitle: "欢迎来到我的歌单",
+    hint: "移入查看更多",
     styles: {
       titleSize: "44px",
       titleWeight: "700",
@@ -127,16 +148,27 @@ export const defaultConfig: SiteConfig = {
     fadeInDuration: 250,
     fadeOutDuration: 200,
   },
+  cardAnimation: {
+    type: "fade",
+    durationMs: 200,
+    delayMs: 0,
+    trigger: "hover",
+    mobileTrigger: "always",
+  },
+  entryIcons: {
+    showYuEntry: true,
+    showConfigEntry: true,
+  },
   cards: [
     {
       id: "card-1",
-      title: "About Me",
-      body: "A virtual singer who loves to share music with everyone!",
+      title: "关于我",
+      body: "一个热爱音乐的虚拟歌手，喜欢和大家分享歌曲！",
       links: [
         {
           id: "link-1",
           url: "https://twitter.com",
-          label: "Twitter",
+          label: "推特",
           icon: "twitter",
           openInNewTab: true,
           styles: {
@@ -150,7 +182,7 @@ export const defaultConfig: SiteConfig = {
         {
           id: "link-2",
           url: "https://youtube.com",
-          label: "YouTube",
+          label: "油管",
           icon: "youtube",
           openInNewTab: true,
           styles: {
@@ -178,13 +210,13 @@ export const defaultConfig: SiteConfig = {
     },
     {
       id: "card-2",
-      title: "Song Requests",
-      body: "Captain members can request songs during streams!",
+      title: "点歌说明",
+      body: "舰长可以在直播期间点歌哦！",
       links: [
         {
           id: "link-3",
           url: "https://bilibili.com",
-          label: "Bilibili",
+          label: "B站",
           icon: "bilibili",
           openInNewTab: true,
           styles: {
@@ -227,16 +259,16 @@ export const defaultConfig: SiteConfig = {
 
 // Default songs
 export const defaultSongs: Song[] = [
-  { id: "1", songName: "Lemon", singer: "Yonezu Kenshi", language: "Japanese", remark: "Popular hit", captainRequestable: true },
-  { id: "2", songName: "Pretender", singer: "Official HIGE DANdism", language: "Japanese", remark: "", captainRequestable: true },
-  { id: "3", songName: "Shape of You", singer: "Ed Sheeran", language: "English", remark: "Dance hit", captainRequestable: false },
-  { id: "4", songName: "Ai Ni", singer: "Jay Chou", language: "Mandarin", pinyinInitial: "A", remark: "Classic", captainRequestable: true },
-  { id: "5", songName: "Bling Bling", singer: "iKON", language: "Other", remark: "K-pop", captainRequestable: false },
-  { id: "6", songName: "Bei Jing Huan Ying Ni", singer: "Various", language: "Mandarin", pinyinInitial: "B", remark: "Olympic song", captainRequestable: true },
-  { id: "7", songName: "YOASOBI - Racing into the Night", singer: "YOASOBI", language: "Japanese", remark: "Viral hit", captainRequestable: true },
-  { id: "8", songName: "Cao Cao", singer: "JJ Lin", language: "Mandarin", pinyinInitial: "C", remark: "Historical theme", captainRequestable: true },
-  { id: "9", songName: "Dynamite", singer: "BTS", language: "English", remark: "Global hit", captainRequestable: true },
-  { id: "10", songName: "Dao Xiang", singer: "Jay Chou", language: "Mandarin", pinyinInitial: "D", remark: "Nostalgic", captainRequestable: true },
+  { id: "1", songName: "Lemon", singer: "米津玄師", language: "Japanese", remark: "热门歌曲", captainRequestable: true },
+  { id: "2", songName: "Pretender", singer: "Official髭男dism", language: "Japanese", remark: "", captainRequestable: true },
+  { id: "3", songName: "Shape of You", singer: "Ed Sheeran", language: "English", remark: "舞曲", captainRequestable: false },
+  { id: "4", songName: "爱你", singer: "周杰伦", language: "Mandarin", pinyinInitial: "A", remark: "经典", captainRequestable: true },
+  { id: "5", songName: "Bling Bling", singer: "iKON", language: "Other", remark: "韩语歌", captainRequestable: false },
+  { id: "6", songName: "北京欢迎你", singer: "群星", language: "Mandarin", pinyinInitial: "B", remark: "奥运歌曲", captainRequestable: true },
+  { id: "7", songName: "夜に駆ける", singer: "YOASOBI", language: "Japanese", remark: "神曲", captainRequestable: true },
+  { id: "8", songName: "曹操", singer: "林俊杰", language: "Mandarin", pinyinInitial: "C", remark: "历史题材", captainRequestable: true },
+  { id: "9", songName: "Dynamite", singer: "BTS", language: "English", remark: "全球热门", captainRequestable: true },
+  { id: "10", songName: "稻香", singer: "周杰伦", language: "Mandarin", pinyinInitial: "D", remark: "怀旧", captainRequestable: true },
 ];
 
 // API response types
