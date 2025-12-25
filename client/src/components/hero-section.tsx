@@ -118,19 +118,19 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
     ? getAutoTextColor(theme.background) 
     : theme.manualTextColor;
 
+  // "off" mode = always revealed
+  useEffect(() => {
+    if (heroCards.mode === "off") {
+      setIsRevealed(true);
+    }
+  }, [heroCards.mode]);
+
   // IntersectionObserver for scroll reveal mode
   useEffect(() => {
-    if (heroCards.mode !== "scrollReveal" || isMobile) {
-      // For "off" mode, always show cards
-      if (heroCards.mode === "off") {
-        setIsRevealed(true);
-      }
-      return;
-    }
+    if (heroCards.mode !== "scrollReveal" || isMobile) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        // Reveal when hero section is in viewport (>50% visible)
         setIsRevealed(entry.isIntersecting);
       },
       { threshold: 0.5, rootMargin: "0px" }
@@ -156,13 +156,10 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
     }
   }, [heroCards.mode, isMobile]);
 
-  // Determine if cards should be visible
-  const shouldShowCards = heroCards.mode === "off" || isRevealed;
-
-  // Calculate hero shift - use config value or auto-calculate based on card width
-  const cardWidth = 300; // Approximate card width
-  const autoShift = cards.length > 0 ? (cardWidth / 2) + (heroCards.gapPx / 2) : 0;
-  const heroShift = heroCards.heroShiftPx > 0 ? heroCards.heroShiftPx : autoShift;
+  // Calculate hero shift amount - use config value if > 0, otherwise auto-calculate
+  const cardContainerWidth = 320; // Approximate card container width
+  const autoShift = cards.length > 0 ? (cardContainerWidth / 2) + (heroCards.gapPx / 2) : 0;
+  const heroShiftAmount = heroCards.heroShiftPx > 0 ? heroCards.heroShiftPx : autoShift;
 
   const animationStyle = {
     transitionProperty: "transform, opacity",
@@ -180,7 +177,6 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
       >
         {/* Hero Banner - always centered on mobile */}
         <div className="py-8 px-4 flex flex-col items-center text-center">
-          {/* Avatar */}
           <div 
             className="w-20 h-20 rounded-full overflow-hidden mb-4 flex items-center justify-center flex-shrink-0"
             style={{
@@ -190,18 +186,12 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
             }}
           >
             {banner.avatar ? (
-              <img 
-                src={banner.avatar} 
-                alt="头像" 
-                className="w-full h-full object-cover"
-                data-testid="img-avatar"
-              />
+              <img src={banner.avatar} alt="头像" className="w-full h-full object-cover" data-testid="img-avatar" />
             ) : (
               <Music className="w-8 h-8" style={{ color: textColor, opacity: 0.6 }} />
             )}
           </div>
 
-          {/* Title */}
           <h1 
             className="mb-2 tracking-tight px-2"
             style={{
@@ -215,7 +205,6 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
             {banner.title}
           </h1>
 
-          {/* Subtitle */}
           <p 
             className="mb-3 px-2"
             style={{
@@ -230,7 +219,7 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
           </p>
         </div>
 
-        {/* Mobile Cards - with expand/collapse button */}
+        {/* Mobile Cards - with expand/collapse button for non-off modes */}
         {cards.length > 0 && heroCards.mode !== "off" && (
           <div className="px-4 pb-4">
             <Button
@@ -285,125 +274,120 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
   }
 
   // Desktop layout with hero shift animation
+  // When revealed: hero shifts LEFT, cards slide in FROM THE RIGHT
+  const hasCards = cards.length > 0;
+  const isOffMode = heroCards.mode === "off";
+  
+  // Determine if cards should be visible
+  // For "off" mode: always visible
+  // For other modes: based on isRevealed state
+  const cardsVisible = isOffMode || isRevealed;
+
   return (
     <div 
       ref={heroRef}
-      className="w-full relative"
+      className="w-full overflow-hidden"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       data-testid="hero-section"
-      style={{
-        minHeight: "280px",
-      }}
+      style={{ minHeight: "280px" }}
     >
-      {/* Container that holds hero + cards side by side */}
       <div 
-        className="w-full flex items-center justify-center py-12 px-8"
+        className="w-full flex items-center justify-center py-12 px-8 relative"
         style={{ minHeight: "280px" }}
       >
-        {/* Inner flex container for hero and cards */}
+        {/* Hero Content - shifts LEFT when cards are visible (except in off mode where it's always shifted) */}
         <div 
-          className="flex items-center"
+          className="flex flex-col items-center text-center flex-shrink-0 relative z-10"
           style={{
-            gap: `${heroCards.gapPx}px`,
+            ...animationStyle,
+            // In "off" mode: always shifted left if cards exist
+            // In other modes: shift left only when revealed
+            transform: hasCards && cardsVisible 
+              ? `translateX(-${heroShiftAmount}px)` 
+              : "translateX(0)",
           }}
         >
-          {/* Hero Content - shifts left when cards are revealed */}
           <div 
-            className="flex flex-col items-center text-center flex-shrink-0"
+            className="w-28 h-28 rounded-full overflow-hidden mb-6 flex items-center justify-center"
             style={{
-              ...animationStyle,
-              transform: shouldShowCards && cards.length > 0 
-                ? `translateX(-${heroShift}px)` 
-                : "translateX(0)",
+              background: "rgba(255,255,255,0.22)",
+              border: "2px solid rgba(255,255,255,0.35)",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
             }}
           >
-            {/* Avatar */}
-            <div 
-              className="w-28 h-28 rounded-full overflow-hidden mb-6 flex items-center justify-center"
-              style={{
-                background: "rgba(255,255,255,0.22)",
-                border: "2px solid rgba(255,255,255,0.35)",
-                boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-              }}
-            >
-              {banner.avatar ? (
-                <img 
-                  src={banner.avatar} 
-                  alt="头像" 
-                  className="w-full h-full object-cover"
-                  data-testid="img-avatar"
-                />
-              ) : (
-                <Music className="w-12 h-12" style={{ color: textColor, opacity: 0.6 }} />
-              )}
-            </div>
-
-            {/* Title */}
-            <h1 
-              className="mb-3 tracking-tight"
-              style={{
-                color: textColor,
-                fontSize: banner.styles.titleSize,
-                fontWeight: banner.styles.titleWeight,
-                textShadow: "0 2px 8px rgba(0,0,0,0.1)",
-              }}
-              data-testid="text-hero-title"
-            >
-              {banner.title}
-            </h1>
-
-            {/* Subtitle */}
-            <p 
-              className="mb-4"
-              style={{
-                color: textColor,
-                fontSize: banner.styles.subtitleSize,
-                fontWeight: banner.styles.subtitleWeight,
-                opacity: 0.9,
-              }}
-              data-testid="text-hero-subtitle"
-            >
-              {banner.subtitle}
-            </p>
-
-            {/* Hint - only show when cards are hidden */}
-            {heroCards.mode !== "off" && (
-              <p 
-                style={{
-                  color: textColor,
-                  fontSize: banner.styles.hintSize,
-                  opacity: shouldShowCards ? 0 : 0.6,
-                  ...animationStyle,
-                }}
-                data-testid="text-hero-hint"
-              >
-                {banner.hint}
-              </p>
+            {banner.avatar ? (
+              <img src={banner.avatar} alt="头像" className="w-full h-full object-cover" data-testid="img-avatar" />
+            ) : (
+              <Music className="w-12 h-12" style={{ color: textColor, opacity: 0.6 }} />
             )}
           </div>
 
-          {/* Cards Container - slides in from right */}
-          {cards.length > 0 && (
-            <div 
-              className="flex flex-col gap-4 flex-shrink-0"
+          <h1 
+            className="mb-3 tracking-tight"
+            style={{
+              color: textColor,
+              fontSize: banner.styles.titleSize,
+              fontWeight: banner.styles.titleWeight,
+              textShadow: "0 2px 8px rgba(0,0,0,0.1)",
+            }}
+            data-testid="text-hero-title"
+          >
+            {banner.title}
+          </h1>
+
+          <p 
+            className="mb-4"
+            style={{
+              color: textColor,
+              fontSize: banner.styles.subtitleSize,
+              fontWeight: banner.styles.subtitleWeight,
+              opacity: 0.9,
+            }}
+            data-testid="text-hero-subtitle"
+          >
+            {banner.subtitle}
+          </p>
+
+          {/* Hint - only show when cards are hidden and mode is not "off" */}
+          {!isOffMode && hasCards && (
+            <p 
               style={{
+                color: textColor,
+                fontSize: banner.styles.hintSize,
+                opacity: isRevealed ? 0 : 0.6,
                 ...animationStyle,
-                opacity: shouldShowCards ? 1 : 0,
-                transform: shouldShowCards 
-                  ? `translateX(-${heroShift}px)` 
-                  : `translateX(${40 - heroShift}px)`,
-                pointerEvents: shouldShowCards ? "auto" : "none",
-                minWidth: "280px",
-                maxWidth: "360px",
               }}
+              data-testid="text-hero-hint"
             >
-              {cards.map((card) => (
-                <HoverCard key={card.id} card={card} textColor={textColor} />
-              ))}
-            </div>
+              {banner.hint}
+            </p>
           )}
         </div>
+
+        {/* Cards Container - positioned to the RIGHT of hero, slides in from right */}
+        {hasCards && (
+          <div 
+            className="flex flex-col gap-4 flex-shrink-0 absolute"
+            style={{
+              ...animationStyle,
+              left: "50%",
+              // In "off" mode or when revealed: cards at final position
+              // Otherwise: cards pushed off to the right
+              marginLeft: cardsVisible 
+                ? `${heroCards.gapPx / 2}px` 
+                : `${cardContainerWidth + heroCards.gapPx}px`,
+              opacity: cardsVisible ? 1 : 0,
+              pointerEvents: cardsVisible ? "auto" : "none",
+              minWidth: "280px",
+              maxWidth: "360px",
+            }}
+          >
+            {cards.map((card) => (
+              <HoverCard key={card.id} card={card} textColor={textColor} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

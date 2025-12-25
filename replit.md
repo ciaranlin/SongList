@@ -6,9 +6,26 @@ A production-ready web application for managing and displaying a VTuber's song l
 
 ## Recent Changes (December 25, 2025)
 
+- **Hero Cards Reveal System**
+  - Three reveal modes: off (always visible), scrollReveal, hoverReveal
+  - Hero shifts left when cards are revealed with smooth CSS animations
+  - Cards slide in from right with configurable gap and animation timing
+  - Mobile uses expand/collapse button instead of hover/scroll
+
+- **Click-to-Copy Song Names**
+  - Click any song name to copy "点歌 {songName}" format to clipboard
+  - Configurable template with {songName} placeholder
+  - Optional toast notification on copy success
+  - Fallback to execCommand for older browsers
+
+- **Filter Hint Text**
+  - Configurable hint text above the search bar
+  - Customizable alignment (left/center/right), font size, and color
+  - Auto or manual color mode matching theme
+
 - **Full MVP Implementation Complete**
   - Homepage with hero banner, hover-reveal cards, and song table
-  - Config page (/config) with two-column layout and live preview
+  - Config page (/config) with five-tab layout and live preview
   - Song admin page (/yu) with full CRUD operations
   - JSON file persistence for config and songs data
   - Password-protected admin pages (default: vtuber123)
