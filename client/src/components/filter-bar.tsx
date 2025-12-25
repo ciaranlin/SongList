@@ -34,6 +34,18 @@ export function FilterBar({ config, songs, onFilteredSongsChange }: FilterBarPro
     ? getAutoTextColor(config.theme.background) 
     : config.theme.manualTextColor;
 
+  // Defensive defaults for filterHint
+  const filterHint = config.filterHint ?? {
+    enabled: true,
+    text: "挑个想听的类别呗~",
+    align: "left" as const,
+    fontSize: 14,
+    colorMode: "auto" as const,
+    manualColor: "#333333",
+  };
+
+  const hintColor = filterHint.colorMode === "auto" ? textColor : filterHint.manualColor;
+
   // Compute filtered songs using useMemo
   const filteredSongs = useMemo(() => {
     let filtered = [...songs];
@@ -107,6 +119,27 @@ export function FilterBar({ config, songs, onFilteredSongsChange }: FilterBarPro
         className="vtuber-glass rounded-2xl p-3 sm:p-4 flex flex-col gap-3 sm:gap-4"
         style={{ backdropFilter: "blur(12px)" }}
       >
+        {/* Filter Hint Text */}
+        {filterHint.enabled && (
+          <div 
+            className="px-1"
+            style={{
+              textAlign: filterHint.align,
+            }}
+            data-testid="filter-hint"
+          >
+            <span
+              style={{
+                color: hintColor,
+                fontSize: `${filterHint.fontSize}px`,
+                opacity: 0.8,
+              }}
+            >
+              {filterHint.text}
+            </span>
+          </div>
+        )}
+
         {/* Top row: Language tabs + Search + Captain + Clear */}
         <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3">
           {/* Language Tabs - scrollable on mobile */}

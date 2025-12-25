@@ -31,6 +31,26 @@
     "trigger": "hover",
     "mobileTrigger": "always"
   },
+  "heroCards": {
+    "mode": "scrollReveal",
+    "heroShiftPx": 0,
+    "gapPx": 32,
+    "animationDurationMs": 400,
+    "animationEasing": "cubic-bezier(0.4, 0, 0.2, 1)"
+  },
+  "copyConfig": {
+    "enabled": true,
+    "template": "点歌 {songName}",
+    "toastEnabled": true
+  },
+  "filterHint": {
+    "enabled": true,
+    "text": "挑个想听的类别呗~",
+    "align": "left",
+    "fontSize": 14,
+    "colorMode": "auto",
+    "manualColor": "#333333"
+  },
   "entryIcons": {
     "showYuEntry": true,
     "showConfigEntry": true

@@ -3,8 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { type SiteConfig, type Song, defaultConfig, defaultSongs } from "@shared/schema";
 import { ConfigProvider } from "@/lib/config-context";
-import { HeroBanner } from "@/components/hero-banner";
-import { HoverCards } from "@/components/hover-cards";
+import { HeroSection } from "@/components/hero-section";
 import { FilterBar } from "@/components/filter-bar";
 import { SongTable } from "@/components/song-table";
 import { Button } from "@/components/ui/button";
@@ -27,7 +26,6 @@ function useIsMobile() {
 }
 
 export default function Home() {
-  const [isHeroHovered, setIsHeroHovered] = useState(false);
   const [filteredSongs, setFilteredSongs] = useState<Song[]>([]);
   const isMobile = useIsMobile();
 
@@ -50,16 +48,6 @@ export default function Home() {
 
   const handleFilterChange = useCallback((newFilteredSongs: Song[]) => {
     setFilteredSongs(newFilteredSongs);
-  }, []);
-
-  const handleHeroMouseEnter = useCallback(() => {
-    if (config.hoverBehavior.enabled && config.hoverBehavior.showOnHeroHover && !isMobile) {
-      setIsHeroHovered(true);
-    }
-  }, [config.hoverBehavior, isMobile]);
-
-  const handleHeroMouseLeave = useCallback(() => {
-    setIsHeroHovered(false);
   }, []);
 
   // Show entry icons based on config
@@ -106,19 +94,9 @@ export default function Home() {
 
         {/* Main Content */}
         <div className="flex flex-col items-center">
-          {/* Hero Section */}
-          <HeroBanner 
+          {/* Hero Section with Reveal Animation */}
+          <HeroSection 
             config={config}
-            isHovered={isHeroHovered}
-            onMouseEnter={handleHeroMouseEnter}
-            onMouseLeave={handleHeroMouseLeave}
-            isMobile={isMobile}
-          />
-
-          {/* Hover-reveal Cards */}
-          <HoverCards 
-            config={config}
-            isVisible={isHeroHovered}
             isMobile={isMobile}
           />
 

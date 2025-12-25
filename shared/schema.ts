@@ -56,7 +56,7 @@ export const cardSchema = z.object({
 
 export type Card = z.infer<typeof cardSchema>;
 
-// Animation configuration for card area
+// Animation configuration for card area (legacy, kept for compatibility)
 export const cardAnimationSchema = z.object({
   type: z.enum(["none", "fade", "slide", "scale", "fadeSlide"]).default("fade"),
   durationMs: z.number().default(200),
@@ -66,6 +66,38 @@ export const cardAnimationSchema = z.object({
 }).default({});
 
 export type CardAnimation = z.infer<typeof cardAnimationSchema>;
+
+// Hero cards reveal mode configuration
+export const heroCardsSchema = z.object({
+  mode: z.enum(["off", "scrollReveal", "hoverReveal"]).default("scrollReveal"),
+  heroShiftPx: z.number().default(0), // 0 = auto calculate
+  gapPx: z.number().default(32),
+  animationDurationMs: z.number().default(400),
+  animationEasing: z.string().default("cubic-bezier(0.4, 0, 0.2, 1)"),
+}).default({});
+
+export type HeroCards = z.infer<typeof heroCardsSchema>;
+
+// Copy to clipboard configuration
+export const copyConfigSchema = z.object({
+  enabled: z.boolean().default(true),
+  template: z.string().default("点歌 {songName}"),
+  toastEnabled: z.boolean().default(true),
+}).default({});
+
+export type CopyConfig = z.infer<typeof copyConfigSchema>;
+
+// Filter hint configuration
+export const filterHintSchema = z.object({
+  enabled: z.boolean().default(true),
+  text: z.string().default("挑个想听的类别呗~"),
+  align: z.enum(["left", "center", "right"]).default("left"),
+  fontSize: z.number().default(14),
+  colorMode: z.enum(["auto", "manual"]).default("auto"),
+  manualColor: z.string().default("#333333"),
+}).default({});
+
+export type FilterHint = z.infer<typeof filterHintSchema>;
 
 // UI entry icons configuration
 export const entryIconsSchema = z.object({
@@ -103,6 +135,9 @@ export const siteConfigSchema = z.object({
     fadeOutDuration: z.number().default(200),
   }).default({}),
   cardAnimation: cardAnimationSchema,
+  heroCards: heroCardsSchema,
+  copyConfig: copyConfigSchema,
+  filterHint: filterHintSchema,
   entryIcons: entryIconsSchema,
   cards: z.array(cardSchema).default([]),
   layout: z.object({
@@ -154,6 +189,26 @@ export const defaultConfig: SiteConfig = {
     delayMs: 0,
     trigger: "hover",
     mobileTrigger: "always",
+  },
+  heroCards: {
+    mode: "scrollReveal",
+    heroShiftPx: 0,
+    gapPx: 32,
+    animationDurationMs: 400,
+    animationEasing: "cubic-bezier(0.4, 0, 0.2, 1)",
+  },
+  copyConfig: {
+    enabled: true,
+    template: "点歌 {songName}",
+    toastEnabled: true,
+  },
+  filterHint: {
+    enabled: true,
+    text: "挑个想听的类别呗~",
+    align: "left",
+    fontSize: 14,
+    colorMode: "auto",
+    manualColor: "#333333",
   },
   entryIcons: {
     showYuEntry: true,

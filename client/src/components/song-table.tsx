@@ -1,5 +1,6 @@
 import { type SiteConfig, type Song } from "@shared/schema";
 import { getAutoTextColor } from "@/lib/config-context";
+import { useToast } from "@/hooks/use-toast";
 import {
   Table,
   TableBody,
@@ -9,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Anchor, Music2 } from "lucide-react";
+import { Anchor, Music2, Copy } from "lucide-react";
 
 interface SongTableProps {
   config: SiteConfig;
@@ -50,6 +51,52 @@ function LoadingSkeleton() {
 }
 
 export function SongTable({ config, songs, isLoading }: SongTableProps) {
+  const { toast } = useToast();
+  
+  // Defensive defaults for copyConfig
+  const copyConfig = config.copyConfig ?? {
+    enabled: true,
+    template: "点歌 {songName}",
+    toastEnabled: true,
+  };
+
+  // Copy song name to clipboard
+  const handleCopySong = async (songName: string) => {
+    if (!copyConfig.enabled) return;
+
+    const copyText = copyConfig.template.replace("{songName}", songName);
+    
+    try {
+      // Try modern clipboard API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(copyText);
+      } else {
+        // Fallback to execCommand
+        const textArea = document.createElement("textarea");
+        textArea.value = copyText;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+
+      if (copyConfig.toastEnabled) {
+        toast({
+          title: "已复制",
+          description: copyText,
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "复制失败",
+        description: "请手动复制歌名",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div 
@@ -112,8 +159,18 @@ export function SongTable({ config, songs, isLoading }: SongTableProps) {
                 style={{ borderColor: "rgba(0,0,0,0.08)" }}
                 data-testid={`row-song-${song.id}`}
               >
-                <TableCell className="font-medium text-sm py-4" data-testid={`text-songname-${song.id}`}>
-                  {song.songName}
+                <TableCell className="py-4" data-testid={`text-songname-${song.id}`}>
+                  <button
+                    onClick={() => handleCopySong(song.songName)}
+                    className="font-medium text-sm text-left group flex items-center gap-2 cursor-pointer transition-colors hover:text-primary"
+                    disabled={!copyConfig.enabled}
+                    data-testid={`button-copy-${song.id}`}
+                  >
+                    <span>{song.songName}</span>
+                    {copyConfig.enabled && (
+                      <Copy className="w-3.5 h-3.5 opacity-0 group-hover:opacity-60 transition-opacity" />
+                    )}
+                  </button>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground py-4" data-testid={`text-singer-${song.id}`}>
                   {song.singer}
@@ -160,9 +217,17 @@ export function SongTable({ config, songs, isLoading }: SongTableProps) {
             data-testid={`card-song-${song.id}`}
           >
             <div className="flex items-start justify-between gap-2 mb-2">
-              <h3 className="font-semibold text-base text-foreground">
-                {song.songName}
-              </h3>
+              <button
+                onClick={() => handleCopySong(song.songName)}
+                className="font-semibold text-base text-foreground text-left flex items-center gap-2"
+                disabled={!copyConfig.enabled}
+                data-testid={`button-copy-mobile-${song.id}`}
+              >
+                <span>{song.songName}</span>
+                {copyConfig.enabled && (
+                  <Copy className="w-3.5 h-3.5 opacity-40" />
+                )}
+              </button>
               {song.captainRequestable && (
                 <Anchor className="w-4 h-4 flex-shrink-0 text-primary" />
               )}
