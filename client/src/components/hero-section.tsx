@@ -102,10 +102,15 @@ function HoverCard({ card, textColor }: { card: CardType; textColor: string }) {
 export function HeroSection({ config, isMobile }: HeroSectionProps) {
   const { banner, theme, cards } = config;
   const heroRef = useRef<HTMLDivElement>(null);
-  const [isRevealed, setIsRevealed] = useState(false);
+  const avatarRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const cardsContainerRef = useRef<HTMLDivElement>(null);
+  
+  const [expanded, setExpanded] = useState(false);
+  const [shouldRender, setShouldRender] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Defensive defaults for heroCards
   const heroCards = config.heroCards ?? {
     mode: "scrollReveal" as const,
     heroShiftPx: 0,
@@ -114,60 +119,129 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
     animationEasing: "cubic-bezier(0.4, 0, 0.2, 1)",
   };
 
+  const heroHotspot = config.heroHotspot ?? {
+    enabled: true,
+    target: "avatar" as const,
+    sizePx: 80,
+    showHint: true,
+    hintText: "移入展开",
+    debounceMs: 120,
+  };
+
   const textColor = theme.textColorMode === "auto" 
     ? getAutoTextColor(theme.background) 
     : theme.manualTextColor;
 
-  // "off" mode = always revealed
+  const isOffMode = heroCards.mode === "off";
+  const isHoverMode = heroCards.mode === "hoverReveal";
+  const isScrollMode = heroCards.mode === "scrollReveal";
+  const hasCards = cards.length > 0;
+
   useEffect(() => {
-    if (heroCards.mode === "off") {
-      setIsRevealed(true);
+    if (isOffMode) {
+      setExpanded(true);
+      setShouldRender(true);
     }
-  }, [heroCards.mode]);
+  }, [isOffMode]);
 
-  // IntersectionObserver for scroll reveal mode
   useEffect(() => {
-    if (heroCards.mode !== "scrollReveal" || isMobile) return;
+    if (isScrollMode && !isMobile) {
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setShouldRender(true);
+            requestAnimationFrame(() => setExpanded(true));
+          } else {
+            setExpanded(false);
+          }
+        },
+        { threshold: 0.5, rootMargin: "0px" }
+      );
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsRevealed(entry.isIntersecting);
-      },
-      { threshold: 0.5, rootMargin: "0px" }
-    );
+      if (heroRef.current) {
+        observer.observe(heroRef.current);
+      }
 
-    if (heroRef.current) {
-      observer.observe(heroRef.current);
+      return () => observer.disconnect();
     }
+  }, [isScrollMode, isMobile]);
 
-    return () => observer.disconnect();
-  }, [heroCards.mode, isMobile]);
-
-  // Handle hover reveal mode
-  const handleMouseEnter = useCallback(() => {
-    if (heroCards.mode === "hoverReveal" && !isMobile) {
-      setIsRevealed(true);
+  useEffect(() => {
+    if (!expanded && shouldRender && !isOffMode) {
+      const timer = setTimeout(() => {
+        setShouldRender(false);
+      }, heroCards.animationDurationMs + 50);
+      return () => clearTimeout(timer);
     }
-  }, [heroCards.mode, isMobile]);
+  }, [expanded, shouldRender, heroCards.animationDurationMs, isOffMode]);
 
-  const handleMouseLeave = useCallback(() => {
-    if (heroCards.mode === "hoverReveal" && !isMobile) {
-      setIsRevealed(false);
+  const handleHotspotEnter = useCallback(() => {
+    if (!isHoverMode || isMobile) return;
+    
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
     }
-  }, [heroCards.mode, isMobile]);
+    
+    setShouldRender(true);
+    requestAnimationFrame(() => setExpanded(true));
+  }, [isHoverMode, isMobile]);
 
-  // Calculate hero shift amount - use config value if > 0, otherwise auto-calculate
-  const cardContainerWidth = 320; // Approximate card container width
-  const autoShift = cards.length > 0 ? (cardContainerWidth / 2) + (heroCards.gapPx / 2) : 0;
+  const handleHotspotLeave = useCallback(() => {
+    if (!isHoverMode || isMobile) return;
+    
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    debounceTimerRef.current = setTimeout(() => {
+      setExpanded(false);
+      debounceTimerRef.current = null;
+    }, heroHotspot.debounceMs);
+  }, [isHoverMode, isMobile, heroHotspot.debounceMs]);
+
+  const handleCardsEnter = useCallback(() => {
+    if (!isHoverMode || isMobile) return;
+    
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+  }, [isHoverMode, isMobile]);
+
+  const handleCardsLeave = useCallback(() => {
+    if (!isHoverMode || isMobile) return;
+    
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    debounceTimerRef.current = setTimeout(() => {
+      setExpanded(false);
+      debounceTimerRef.current = null;
+    }, heroHotspot.debounceMs);
+  }, [isHoverMode, isMobile, heroHotspot.debounceMs]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  const cardContainerWidth = 320;
+  const autoShift = hasCards ? (cardContainerWidth / 2) + (heroCards.gapPx / 2) : 0;
   const heroShiftAmount = heroCards.heroShiftPx > 0 ? heroCards.heroShiftPx : autoShift;
 
   const animationStyle = {
-    transitionProperty: "transform, opacity",
+    transitionProperty: "transform, opacity, margin-left",
     transitionDuration: `${heroCards.animationDurationMs}ms`,
     transitionTimingFunction: heroCards.animationEasing,
   };
 
-  // Mobile layout - vertical with expand/collapse
+  const cardsVisible = isOffMode || expanded;
+
   if (isMobile) {
     return (
       <div 
@@ -175,7 +249,6 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
         className="w-full"
         data-testid="hero-section"
       >
-        {/* Hero Banner - always centered on mobile */}
         <div className="py-8 px-4 flex flex-col items-center text-center">
           <div 
             className="w-20 h-20 rounded-full overflow-hidden mb-4 flex items-center justify-center flex-shrink-0"
@@ -219,8 +292,7 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
           </p>
         </div>
 
-        {/* Mobile Cards - with expand/collapse button for non-off modes */}
-        {cards.length > 0 && heroCards.mode !== "off" && (
+        {hasCards && !isOffMode && (
           <div className="px-4 pb-4">
             <Button
               variant="secondary"
@@ -259,8 +331,7 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
           </div>
         )}
 
-        {/* Off mode - always show cards without toggle */}
-        {cards.length > 0 && heroCards.mode === "off" && (
+        {hasCards && isOffMode && (
           <div className="px-4 pb-4">
             <div className="flex flex-col gap-4">
               {cards.map((card) => (
@@ -273,22 +344,19 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
     );
   }
 
-  // Desktop layout with hero shift animation
-  // When revealed: hero shifts LEFT, cards slide in FROM THE RIGHT
-  const hasCards = cards.length > 0;
-  const isOffMode = heroCards.mode === "off";
-  
-  // Determine if cards should be visible
-  // For "off" mode: always visible
-  // For other modes: based on isRevealed state
-  const cardsVisible = isOffMode || isRevealed;
+  const hotspotHandlers = heroHotspot.enabled && isHoverMode
+    ? { onMouseEnter: handleHotspotEnter, onMouseLeave: handleHotspotLeave }
+    : {};
+
+  const legacyHoverHandlers = !heroHotspot.enabled && isHoverMode
+    ? { onMouseEnter: handleHotspotEnter, onMouseLeave: handleHotspotLeave }
+    : {};
 
   return (
     <div 
       ref={heroRef}
       className="w-full overflow-hidden"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      {...legacyHoverHandlers}
       data-testid="hero-section"
       style={{ minHeight: "280px" }}
     >
@@ -296,20 +364,18 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
         className="w-full flex items-center justify-center py-12 px-8 relative"
         style={{ minHeight: "280px" }}
       >
-        {/* Hero Content - shifts LEFT when cards are visible (except in off mode where it's always shifted) */}
         <div 
           className="flex flex-col items-center text-center flex-shrink-0 relative z-10"
           style={{
             ...animationStyle,
-            // In "off" mode: always shifted left if cards exist
-            // In other modes: shift left only when revealed
             transform: hasCards && cardsVisible 
               ? `translateX(-${heroShiftAmount}px)` 
               : "translateX(0)",
           }}
         >
           <div 
-            className="w-28 h-28 rounded-full overflow-hidden mb-6 flex items-center justify-center"
+            ref={avatarRef}
+            className="w-28 h-28 rounded-full overflow-hidden mb-6 flex items-center justify-center relative"
             style={{
               background: "rgba(255,255,255,0.22)",
               border: "2px solid rgba(255,255,255,0.35)",
@@ -321,20 +387,71 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
             ) : (
               <Music className="w-12 h-12" style={{ color: textColor, opacity: 0.6 }} />
             )}
+            
+            {heroHotspot.enabled && isHoverMode && heroHotspot.target === "avatar" && hasCards && (
+              <div 
+                className="absolute inset-0 flex items-center justify-center"
+                style={{ pointerEvents: "none" }}
+              >
+                <div
+                  className="rounded-full flex items-center justify-center cursor-pointer"
+                  style={{
+                    width: `${heroHotspot.sizePx}px`,
+                    height: `${heroHotspot.sizePx}px`,
+                    background: expanded ? "transparent" : "rgba(0,0,0,0.25)",
+                    backdropFilter: expanded ? "none" : "blur(2px)",
+                    transition: "all 200ms ease",
+                    pointerEvents: "auto",
+                  }}
+                  {...hotspotHandlers}
+                  data-testid="hotspot-avatar"
+                >
+                  {heroHotspot.showHint && !expanded && (
+                    <span style={{ color: "#fff", fontSize: "10px", fontWeight: 500, textAlign: "center", padding: "4px" }}>
+                      {heroHotspot.hintText}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
-          <h1 
-            className="mb-3 tracking-tight"
-            style={{
-              color: textColor,
-              fontSize: banner.styles.titleSize,
-              fontWeight: banner.styles.titleWeight,
-              textShadow: "0 2px 8px rgba(0,0,0,0.1)",
-            }}
-            data-testid="text-hero-title"
-          >
-            {banner.title}
-          </h1>
+          <div className="relative mb-3">
+            <h1 
+              ref={titleRef}
+              className="tracking-tight"
+              style={{
+                color: textColor,
+                fontSize: banner.styles.titleSize,
+                fontWeight: banner.styles.titleWeight,
+                textShadow: "0 2px 8px rgba(0,0,0,0.1)",
+              }}
+              data-testid="text-hero-title"
+            >
+              {banner.title}
+            </h1>
+            
+            {heroHotspot.enabled && isHoverMode && heroHotspot.target === "title" && hasCards && (
+              <div
+                className="absolute inset-0 flex items-center justify-center cursor-pointer rounded-lg"
+                style={{
+                  background: expanded ? "transparent" : "rgba(0,0,0,0.08)",
+                  transition: "all 200ms ease",
+                }}
+                {...hotspotHandlers}
+                data-testid="hotspot-title"
+              >
+                {heroHotspot.showHint && !expanded && (
+                  <span 
+                    className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap"
+                    style={{ color: textColor, fontSize: "11px", opacity: 0.6 }}
+                  >
+                    {heroHotspot.hintText}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
 
           <p 
             className="mb-4"
@@ -349,13 +466,12 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
             {banner.subtitle}
           </p>
 
-          {/* Hint - only show when cards are hidden and mode is not "off" */}
-          {!isOffMode && hasCards && (
+          {!isOffMode && hasCards && !heroHotspot.enabled && (
             <p 
               style={{
                 color: textColor,
                 fontSize: banner.styles.hintSize,
-                opacity: isRevealed ? 0 : 0.6,
+                opacity: expanded ? 0 : 0.6,
                 ...animationStyle,
               }}
               data-testid="text-hero-hint"
@@ -365,15 +481,13 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
           )}
         </div>
 
-        {/* Cards Container - positioned to the RIGHT of hero, slides in from right */}
-        {hasCards && (
+        {hasCards && (shouldRender || isOffMode) && (
           <div 
+            ref={cardsContainerRef}
             className="flex flex-col gap-4 flex-shrink-0 absolute"
             style={{
               ...animationStyle,
               left: "50%",
-              // In "off" mode or when revealed: cards at final position
-              // Otherwise: cards pushed off to the right
               marginLeft: cardsVisible 
                 ? `${heroCards.gapPx / 2}px` 
                 : `${cardContainerWidth + heroCards.gapPx}px`,
@@ -382,6 +496,8 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
               minWidth: "280px",
               maxWidth: "360px",
             }}
+            onMouseEnter={handleCardsEnter}
+            onMouseLeave={handleCardsLeave}
           >
             {cards.map((card) => (
               <HoverCard key={card.id} card={card} textColor={textColor} />

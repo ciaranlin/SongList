@@ -78,6 +78,18 @@ export const heroCardsSchema = z.object({
 
 export type HeroCards = z.infer<typeof heroCardsSchema>;
 
+// Hero hotspot configuration for precise hover trigger
+export const heroHotspotSchema = z.object({
+  enabled: z.boolean().default(true),
+  target: z.enum(["avatar", "title", "icon"]).default("avatar"),
+  sizePx: z.number().min(40).max(120).default(80),
+  showHint: z.boolean().default(true),
+  hintText: z.string().default("移入展开"),
+  debounceMs: z.number().min(50).max(200).default(120),
+}).default({});
+
+export type HeroHotspot = z.infer<typeof heroHotspotSchema>;
+
 // Copy to clipboard configuration
 export const copyConfigSchema = z.object({
   enabled: z.boolean().default(true),
@@ -136,6 +148,7 @@ export const siteConfigSchema = z.object({
   }).default({}),
   cardAnimation: cardAnimationSchema,
   heroCards: heroCardsSchema,
+  heroHotspot: heroHotspotSchema,
   copyConfig: copyConfigSchema,
   filterHint: filterHintSchema,
   entryIcons: entryIconsSchema,
@@ -196,6 +209,14 @@ export const defaultConfig: SiteConfig = {
     gapPx: 32,
     animationDurationMs: 400,
     animationEasing: "cubic-bezier(0.4, 0, 0.2, 1)",
+  },
+  heroHotspot: {
+    enabled: true,
+    target: "avatar",
+    sizePx: 80,
+    showHint: true,
+    hintText: "移入展开",
+    debounceMs: 120,
   },
   copyConfig: {
     enabled: true,

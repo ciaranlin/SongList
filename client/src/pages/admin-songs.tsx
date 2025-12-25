@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { type Song, type SiteConfig, type InsertSong, defaultConfig, defaultSongs, insertSongSchema } from "@shared/schema";
@@ -38,6 +38,7 @@ import {
   Home, Save, Plus, Trash2, Pencil, Music, 
   Anchor, Settings, ListMusic
 } from "lucide-react";
+import { pinyin } from "pinyin-pro";
 
 const LANGUAGES = ["Mandarin", "Japanese", "English", "Other"] as const;
 const LANGUAGE_LABELS: Record<typeof LANGUAGES[number], string> = {
@@ -46,7 +47,30 @@ const LANGUAGE_LABELS: Record<typeof LANGUAGES[number], string> = {
   English: "英语",
   Other: "其他",
 };
-const PINYIN_INITIALS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+function getPinyinInitial(songName: string): string {
+  if (!songName || songName.trim().length === 0) return "";
+  
+  const firstChar = songName.trim().charAt(0);
+  
+  if (/[\u4e00-\u9fff]/.test(firstChar)) {
+    try {
+      const pinyinResult = pinyin(firstChar, { pattern: "first", toneType: "none" });
+      const initial = pinyinResult.toUpperCase().charAt(0);
+      if (/[A-Z]/.test(initial)) {
+        return initial;
+      }
+    } catch {
+      return "";
+    }
+  }
+  
+  if (/[a-zA-Z]/.test(firstChar)) {
+    return firstChar.toUpperCase();
+  }
+  
+  return "";
+}
 
 export default function AdminSongsPage() {
   const [isUnlocked, setIsUnlocked] = useState(false);
@@ -110,13 +134,14 @@ export default function AdminSongsPage() {
     },
   });
 
-  // Add song
+  // Add song with auto-generated pinyin initial for Mandarin songs
   const handleAddSong = () => {
     const id = `song-${Date.now()}`;
+    const autoPinyin = newSong.language === "Mandarin" ? getPinyinInitial(newSong.songName) : undefined;
     const song: Song = {
       ...newSong,
       id,
-      pinyinInitial: newSong.language === "Mandarin" ? newSong.pinyinInitial : undefined,
+      pinyinInitial: autoPinyin || undefined,
     };
     setSongs(prev => [...prev, song]);
     setNewSong({
@@ -130,17 +155,22 @@ export default function AdminSongsPage() {
     setIsAddDialogOpen(false);
     toast({
       title: "添加成功",
-      description: "别忘了点击保存",
+      description: autoPinyin ? `首字母：${autoPinyin}` : "别忘了点击保存",
     });
   };
 
-  // Update song
+  // Update song with auto-generated pinyin initial for Mandarin songs
   const handleUpdateSong = (updatedSong: Song) => {
-    setSongs(prev => prev.map(s => s.id === updatedSong.id ? updatedSong : s));
+    const autoPinyin = updatedSong.language === "Mandarin" ? getPinyinInitial(updatedSong.songName) : undefined;
+    const songWithPinyin: Song = {
+      ...updatedSong,
+      pinyinInitial: autoPinyin || undefined,
+    };
+    setSongs(prev => prev.map(s => s.id === songWithPinyin.id ? songWithPinyin : s));
     setEditingSong(null);
     toast({
       title: "更新成功",
-      description: "别忘了点击保存",
+      description: autoPinyin ? `首字母：${autoPinyin}` : "别忘了点击保存",
     });
   };
 
@@ -430,22 +460,12 @@ export default function AdminSongsPage() {
                 </SelectContent>
               </Select>
             </div>
-            {newSong.language === "Mandarin" && (
-              <div>
-                <Label className="text-sm mb-2 block">拼音首字母</Label>
-                <Select
-                  value={newSong.pinyinInitial || ""}
-                  onValueChange={(value) => setNewSong(prev => ({ ...prev, pinyinInitial: value }))}
-                >
-                  <SelectTrigger className="rounded-lg" data-testid="select-new-pinyin">
-                    <SelectValue placeholder="选择首字母" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PINYIN_INITIALS.map((initial) => (
-                      <SelectItem key={initial} value={initial}>{initial}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {newSong.language === "Mandarin" && newSong.songName && (
+              <div className="flex items-center gap-2 p-3 rounded-lg" style={{ background: "rgba(0,0,0,0.03)" }}>
+                <Label className="text-sm text-muted-foreground">拼音首字母：</Label>
+                <Badge variant="secondary" className="rounded-full">
+                  {getPinyinInitial(newSong.songName) || "自动识别"}
+                </Badge>
               </div>
             )}
             <div>
@@ -536,22 +556,12 @@ export default function AdminSongsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              {editingSong.language === "Mandarin" && (
-                <div>
-                  <Label className="text-sm mb-2 block">拼音首字母</Label>
-                  <Select
-                    value={editingSong.pinyinInitial || ""}
-                    onValueChange={(value) => setEditingSong(prev => prev ? { ...prev, pinyinInitial: value } : null)}
-                  >
-                    <SelectTrigger className="rounded-lg">
-                      <SelectValue placeholder="选择首字母" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PINYIN_INITIALS.map((initial) => (
-                        <SelectItem key={initial} value={initial}>{initial}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              {editingSong.language === "Mandarin" && editingSong.songName && (
+                <div className="flex items-center gap-2 p-3 rounded-lg" style={{ background: "rgba(0,0,0,0.03)" }}>
+                  <Label className="text-sm text-muted-foreground">拼音首字母：</Label>
+                  <Badge variant="secondary" className="rounded-full">
+                    {getPinyinInitial(editingSong.songName) || "自动识别"}
+                  </Badge>
                 </div>
               )}
               <div>

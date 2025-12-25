@@ -32,11 +32,19 @@
     "mobileTrigger": "always"
   },
   "heroCards": {
-    "mode": "scrollReveal",
+    "mode": "hoverReveal",
     "heroShiftPx": 0,
     "gapPx": 32,
     "animationDurationMs": 400,
     "animationEasing": "cubic-bezier(0.4, 0, 0.2, 1)"
+  },
+  "heroHotspot": {
+    "enabled": true,
+    "target": "avatar",
+    "sizePx": 80,
+    "showHint": true,
+    "hintText": "移入展开",
+    "debounceMs": 120
   },
   "copyConfig": {
     "enabled": true,

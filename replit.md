@@ -6,17 +6,28 @@ A production-ready web application for managing and displaying a VTuber's song l
 
 ## Recent Changes (December 25, 2025)
 
-- **Hero Cards Reveal System**
-  - Three reveal modes: off (always visible), scrollReveal, hoverReveal
-  - Hero shifts left when cards are revealed with smooth CSS animations
-  - Cards slide in from right with configurable gap and animation timing
-  - Mobile uses expand/collapse button instead of hover/scroll
+- **Hero Hotspot Trigger System**
+  - Precise hover trigger area: only avatar/title triggers card reveal (not entire hero row)
+  - Configurable hotspot settings: target, showHint, hintText, debounceMs
+  - Controls appear in config page only when mode is "hoverReveal"
 
-- **Click-to-Copy Song Names**
-  - Click any song name to copy "点歌 {songName}" format to clipboard
-  - Configurable template with {songName} placeholder
-  - Optional toast notification on copy success
-  - Fallback to execCommand for older browsers
+- **Smooth Two-Stage Animation**
+  - Two-stage state: expanded (controls animation), shouldRender (controls DOM)
+  - Debounced exit (80-150ms) prevents flicker when moving between hotspot and cards
+  - Opacity + transform animations for smooth transitions
+  - Cards container has separate mouse handlers to keep reveal active
+
+- **Click Entire Row to Copy**
+  - Click anywhere on song table row (desktop/mobile) triggers copy
+  - Format: "点歌 {songName}" with configurable template
+  - Keyboard accessible (Enter/Space)
+  - Toast notification on successful copy
+
+- **Auto Pinyin Initial Generation**
+  - Mandarin songs auto-generate pinyinInitial (A-Z) from first Chinese character
+  - Uses pinyin-pro library for conversion
+  - Manual selection removed from /yu admin page
+  - Displays auto-detected initial in add/edit dialogs
 
 - **Filter Hint Text**
   - Configurable hint text above the search bar

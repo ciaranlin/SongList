@@ -200,6 +200,7 @@ export default function ConfigPage() {
 
   // Defensive defaults
   const heroCards = previewConfig.heroCards ?? { mode: "scrollReveal", heroShiftPx: 0, gapPx: 32, animationDurationMs: 400, animationEasing: "cubic-bezier(0.4, 0, 0.2, 1)" };
+  const heroHotspot = previewConfig.heroHotspot ?? { enabled: true, target: "avatar", sizePx: 80, showHint: true, hintText: "移入展开", debounceMs: 120 };
   const copyConfig = previewConfig.copyConfig ?? { enabled: true, template: "点歌 {songName}", toastEnabled: true };
   const filterHint = previewConfig.filterHint ?? { enabled: true, text: "挑个想听的类别呗~", align: "left", fontSize: 14, colorMode: "auto", manualColor: "#333333" };
 
@@ -365,6 +366,52 @@ export default function ConfigPage() {
               </div>
             </CardContent>
           </UICard>
+
+          {heroCards.mode === "hoverReveal" && (
+            <UICard>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">悬停热区设置</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">启用精准热区</Label>
+                  <Switch checked={heroHotspot.enabled} onCheckedChange={(checked) => updatePreview("heroHotspot", { enabled: checked })} data-testid="switch-hotspot-enabled" />
+                </div>
+                {heroHotspot.enabled && (
+                  <>
+                    <div>
+                      <Label className="text-sm mb-2 block">触发区域</Label>
+                      <Select value={heroHotspot.target} onValueChange={(value) => updatePreview("heroHotspot", { target: value as "avatar" | "title" | "icon" })}>
+                        <SelectTrigger className="rounded-lg" data-testid="select-hotspot-target">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="avatar">头像区域</SelectItem>
+                          <SelectItem value="title">标题区域</SelectItem>
+                          <SelectItem value="icon">图标提示</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm">显示悬停提示</Label>
+                      <Switch checked={heroHotspot.showHint} onCheckedChange={(checked) => updatePreview("heroHotspot", { showHint: checked })} data-testid="switch-hotspot-hint" />
+                    </div>
+                    {heroHotspot.showHint && (
+                      <div>
+                        <Label className="text-sm mb-2 block">提示文字</Label>
+                        <Input type="text" value={heroHotspot.hintText} onChange={(e) => updatePreview("heroHotspot", { hintText: e.target.value })} className="rounded-lg" placeholder="移入展开" data-testid="input-hotspot-hint" />
+                      </div>
+                    )}
+                    <div>
+                      <Label className="text-sm mb-2 block">退出延迟 (ms)</Label>
+                      <Input type="number" value={heroHotspot.debounceMs} onChange={(e) => updatePreview("heroHotspot", { debounceMs: Math.min(200, Math.max(50, parseInt(e.target.value) || 120)) })} className="rounded-lg" min={50} max={200} data-testid="input-hotspot-debounce" />
+                      <p className="text-xs text-muted-foreground mt-1">防止鼠标移动时闪烁 (50-200ms)</p>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </UICard>
+          )}
         </TabsContent>
 
         {/* Cards Tab */}

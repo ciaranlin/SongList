@@ -155,22 +155,26 @@ export function SongTable({ config, songs, isLoading }: SongTableProps) {
             {songs.map((song, index) => (
               <TableRow 
                 key={song.id}
-                className="border-b transition-colors hover-elevate"
+                className="border-b transition-colors hover-elevate cursor-pointer"
                 style={{ borderColor: "rgba(0,0,0,0.08)" }}
+                onClick={() => handleCopySong(song.songName)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    handleCopySong(song.songName);
+                  }
+                }}
                 data-testid={`row-song-${song.id}`}
               >
                 <TableCell className="py-4" data-testid={`text-songname-${song.id}`}>
-                  <button
-                    onClick={() => handleCopySong(song.songName)}
-                    className="font-medium text-sm text-left group flex items-center gap-2 cursor-pointer transition-colors hover:text-primary"
-                    disabled={!copyConfig.enabled}
-                    data-testid={`button-copy-${song.id}`}
-                  >
+                  <span className="font-medium text-sm flex items-center gap-2">
                     <span>{song.songName}</span>
                     {copyConfig.enabled && (
                       <Copy className="w-3.5 h-3.5 opacity-0 group-hover:opacity-60 transition-opacity" />
                     )}
-                  </button>
+                  </span>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground py-4" data-testid={`text-singer-${song.id}`}>
                   {song.singer}
@@ -212,22 +216,26 @@ export function SongTable({ config, songs, isLoading }: SongTableProps) {
         {songs.map((song) => (
           <div
             key={song.id}
-            className="p-4 rounded-xl border"
+            className="p-4 rounded-xl border cursor-pointer hover-elevate active-elevate-2"
             style={{ borderColor: "rgba(0,0,0,0.08)" }}
+            onClick={() => handleCopySong(song.songName)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleCopySong(song.songName);
+              }
+            }}
             data-testid={`card-song-${song.id}`}
           >
             <div className="flex items-start justify-between gap-2 mb-2">
-              <button
-                onClick={() => handleCopySong(song.songName)}
-                className="font-semibold text-base text-foreground text-left flex items-center gap-2"
-                disabled={!copyConfig.enabled}
-                data-testid={`button-copy-mobile-${song.id}`}
-              >
+              <span className="font-semibold text-base text-foreground flex items-center gap-2">
                 <span>{song.songName}</span>
                 {copyConfig.enabled && (
                   <Copy className="w-3.5 h-3.5 opacity-40" />
                 )}
-              </button>
+              </span>
               {song.captainRequestable && (
                 <Anchor className="w-4 h-4 flex-shrink-0 text-primary" />
               )}
