@@ -1,0 +1,389 @@
+Project: VTuber Song List Website (Config-Driven UI + Live Preview) + Song Admin (/yu)
+
+Build a production-ready web application for a VTuber song list website. The homepage is a public, read-only song list with advanced filters. All UI appearance, hero content, cards and links are managed in /config with real-time live preview. The song list itself is managed in a dedicated admin page /yu (CRUD editing). Both /config and /yu must be fully implemented.
+
+1) Tech Stack & Project Setup
+
+Framework: Next.js + React (Pages Router or App Router is OK).
+
+Styling: CSS Modules or Tailwind (choose one; ensure maintainable structure).
+
+Data persistence must work on server:
+
+Persist site configuration in JSON (e.g. public/site-config.json or server-side storage).
+
+Persist song list data in JSON (e.g. public/music_list.json is allowed for initial, but must provide a server-side saved version so edits persist).
+
+Provide API routes:
+
+Config: GET /api/config, PUT /api/config
+
+Upload: POST /api/upload
+
+Songs: GET /api/songs, PUT /api/songs (optional: POST/DELETE)
+
+Homepage SSR:
+
+Must avoid “flash of default then updates”. If persisted config exists, SSR must render with it directly.
+
+/config page can be client-heavy; it must provide real-time preview without page reload.
+
+2) Pages (Must Exist)
+2.1 Homepage / (Public, Read-only)
+
+Homepage sections:
+
+Hero Banner (avatar + title + subtitle + hint)
+
+Hover-Reveal Cards Area (editable cards below/near hero)
+
+Filter Bar (language tabs + Mandarin pinyin initial + search + captain filter + action buttons)
+
+Song List Table (main list)
+
+Rules:
+
+Homepage is read-only (no editing UI here).
+
+Can include a minimal link to /config and /yu if needed, but no in-place edits.
+
+2.2 Admin /config (All UI/visual editing ONLY here)
+
+This page is the single place to edit:
+
+Background, theme colors, auto text readability rules
+
+Hero banner content and styles
+
+Hover behavior settings for cards
+
+Card list (add/delete/reorder) and card styles
+
+Card internal link items (icon + text + URL)
+
+Layout settings: max width, alignment with table
+
+Filter bar style parameters (spacing, widths)
+
+Default visual values are provided below and must be used initially.
+
+/config must be a two-column layout:
+
+Left column: configuration editor
+
+Right column: live preview of the homepage UI updated instantly on every change (no reload)
+
+Live preview rules:
+
+Editing any field on the left should immediately update the preview on the right.
+
+Only clicking “Save” persists changes to storage.
+
+2.3 Admin /yu (Song List Editing Page)
+
+This page is dedicated to editing the homepage song list:
+
+Load full song list via GET /api/songs
+
+Show an editable table view (rows = songs)
+
+Support CRUD:
+
+Add song
+
+Edit inline or modal
+
+Delete song
+
+Optional reorder
+
+Save via API PUT /api/songs (persist changes)
+
+After saving, homepage should reflect updated song list (on refresh; optionally instant if same session).
+
+/yu must use the same theme and UI components as homepage (same colors, rounded style, etc.).
+
+3) Visual Defaults (Must Apply Initially)
+3.1 Default Overall Style
+
+A “soft pastel VTuber UI” aesthetic:
+
+Rounded corners: 14px–18px
+
+Soft shadow: subtle (no heavy shadows)
+
+Semi-transparent surfaces (“glass-like”)
+
+Clean typography (system font is fine)
+
+Consistent spacing and alignment
+
+3.2 Default Colors (Important)
+
+Use a muted misty blue-gray background and translucent cards/buttons:
+
+Background color (default): #A9BAC4 (or very close)
+
+Card background: rgba(255,255,255,0.22)
+
+Card border: rgba(255,255,255,0.35) 1px
+
+Button background: rgba(255,255,255,0.45)
+
+Button hover background: rgba(255,255,255,0.60)
+
+Table background: #FFFFFF
+
+Divider lines: rgba(0,0,0,0.08)
+
+3.3 Default Typography Scale
+
+Hero title: 40–48px, bold
+
+Hero subtitle: 28–32px, medium
+
+Hint text: 12–14px
+
+Filter bar labels: 13–14px
+
+Table text: 14px
+
+3.4 Readability Requirement (Auto Text Color)
+
+Text must remain readable on the background:
+
+Implement automatic text color adaptation:
+
+If background is light → use dark text (#1B1B1B)
+
+If background is dark → use light text (#FFFFFF)
+
+Optional text shadow if contrast is low.
+
+Any text field supports:
+
+colorMode: auto | manual
+
+This must apply to:
+
+Hero title/subtitle/hint text
+
+Language tabs text
+
+Filter bar text
+
+Buttons
+
+4) Homepage Interaction Requirements (Critical)
+4.1 Hover-Reveal Cards (No Jitter)
+
+When mouse moves to the hero area OR directly below the hero:
+
+Cards appear immediately (smooth fade-in).
+
+Hide when leaving (fade-out).
+
+Must NOT cause jitter or layout shift.
+
+Important bug prevention:
+
+Hovering corner buttons must NOT trigger hero movement or card reveal.
+
+Hover trigger must be bound to a dedicated hover area element only (not including corner buttons).
+
+4.2 Cards are Fully Configurable
+
+Cards displayed under hero:
+
+Each card has:
+
+Title (editable)
+
+Body text (editable)
+
+Styles editable: padding, radius, background, border, shadow
+
+Typography editable: font, size, weight, line height
+
+Cards are reorderable.
+
+4.3 Card Internal Links (Icon + Text + URL)
+
+Each card may contain multiple link items:
+
+Each link item supports:
+
+URL
+
+label text
+
+optional icon/image (upload or URL)
+
+open in new tab option
+
+styles: padding, radius (pill style), background, border, hover effect
+
+Link item visuals should match existing: icon + label in a rounded pill button.
+
+5) Filtering System (Must Match Current Logic)
+5.1 Language Filters (Independent)
+
+Homepage must provide language filters:
+
+Mandarin (国语)
+
+Japanese (日语)
+
+English (英语)
+
+(optionally more)
+
+Language filters are independent from the “Captain Request” filter group.
+
+5.2 Mandarin Extra Filter: Pinyin Initial
+
+When selected language is Mandarin (国语):
+
+Show an additional filter: pinyin initial (A–Z)
+
+Only visible/active in Mandarin mode
+
+Filters Mandarin songs by initial pinyin letter
+
+Implementation:
+
+Either compute pinyin initial from song title or store it as field in song data (recommended for stability):
+
+pinyinInitial: "A"
+
+5.3 Captain Request Filter (Independent Group)
+
+There is a “Captain Request / 舰长点歌” filter group:
+
+It must be separate UI and separate state from language filters.
+
+Example: a toggle/button to show only captain-requestable songs.
+
+Filters combine logically:
+
+final result = language filter AND captain filter (if enabled)
+
+But state must remain independent:
+
+changing language must not reset captain filter
+
+toggling captain filter must not reset language
+
+5.4 Search (Independent)
+
+Search input filters within current results.
+
+Search should not reset language or captain state.
+
+Search fields: songName, singer, remark.
+
+6) Layout Alignment Requirement (Strict)
+
+The filter bar (language tabs + Mandarin initial + search + captain filter + actions) must align with the table:
+
+Filter bar container width equals table container width.
+
+Left/right edges must be identical.
+
+Search input and language tabs must be aligned and evenly spaced.
+
+Provide config parameters for:
+
+contentMaxWidth
+
+alignWithTable
+
+filter bar spacing/gap
+
+This is a must-fix issue: currently language tabs and search are not aligned with table; the new implementation must be aligned.
+
+7) Configuration Schema (Required)
+
+Use a single JSON config structure (persisted) that controls:
+
+theme (background, autoTextColor)
+
+banner (avatar + title/subtitle styles)
+
+hoverBehavior (hover to show cards settings)
+
+cards[] (cards with links[])
+
+layout (maxWidth, alignWithTable, filter bar style)
+
+The /config editor edits this schema and saves it.
+The homepage uses persisted schema to render UI.
+The /config page uses preview schema to render a live preview.
+
+8) Song Data Model (Required)
+
+Each song record should include:
+
+id (string or number)
+
+songName
+
+singer
+
+language (Mandarin/Japanese/English/…)
+
+remark (optional)
+
+captainRequestable (boolean)
+
+pinyinInitial (A–Z, used when language=Mandarin)
+
+9) API Endpoints (Required)
+
+Config:
+
+GET /api/config → return persisted config or defaults
+
+PUT /api/config → persist config
+
+Upload:
+
+POST /api/upload → upload images/icons and return public URL
+
+Songs:
+
+GET /api/songs → return song list
+
+PUT /api/songs → persist updated song list
+
+(Optional) POST /api/songs, DELETE /api/songs/:id
+
+10) Admin Access (Optional but Preferred)
+
+Optionally protect /config and /yu:
+
+Simple password gate
+
+On locked state: blurred background + centered password input
+
+After correct password, unlock admin functions.
+
+11) Quality / Acceptance Criteria (Must Meet)
+
+No build errors.
+
+Homepage SSR uses persisted config (no flash of default then update).
+
+/config changes update preview instantly (live preview).
+
+/yu CRUD works and persists song list.
+
+Mandarin pinyin initial filter works only for Mandarin and doesn’t affect other languages.
+
+Language filters and captain filters are independent in state.
+
+Filter bar and table are strictly aligned left/right.
+
+Text color readability is ensured via auto text color mode by default.
+
+Unified theme across /, /config, /yu.
