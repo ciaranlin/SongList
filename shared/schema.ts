@@ -38,6 +38,7 @@ export const cardSchema = z.object({
   id: z.string(),
   title: z.string(),
   body: z.string().optional(),
+  image: z.string().optional(), // Card image URL
   links: z.array(linkItemSchema).default([]),
   styles: z.object({
     padding: z.string().default("16px"),

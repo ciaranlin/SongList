@@ -26,14 +26,33 @@ import {
 } from "@/components/ui/select";
 import { 
   Save, Home, Eye, Palette, Layout, Type, 
-  Square, Plus, Trash2, GripVertical, ExternalLink, Settings, Upload, Image, Copy, MessageSquare
+  Square, Plus, Trash2, GripVertical, ExternalLink, Settings, Upload, Image, Copy, MessageSquare,
+  Heart, Mail, Phone, MapPin, Link2, Share2, Code, Github, Linkedin, Facebook, Instagram, Share, DollarSign
 } from "lucide-react";
+import { SiBilibili, SiTwitter, SiYoutube } from "react-icons/si";
+
+const ICON_OPTIONS = [
+  { value: "globe", label: "全球", Icon: undefined },
+  { value: "twitter", label: "推特", Icon: undefined },
+  { value: "youtube", label: "油管", Icon: undefined },
+  { value: "bilibili", label: "B站", Icon: undefined },
+  { value: "github", label: "GitHub", Icon: undefined },
+  { value: "mail", label: "邮件", Icon: undefined },
+  { value: "link", label: "链接", Icon: undefined },
+  { value: "share", label: "分享", Icon: undefined },
+  { value: "phone", label: "电话", Icon: undefined },
+  { value: "mappin", label: "位置", Icon: undefined },
+  { value: "facebook", label: "Facebook", Icon: undefined },
+  { value: "instagram", label: "Instagram", Icon: undefined },
+  { value: "linkedin", label: "LinkedIn", Icon: undefined },
+];
 
 export default function ConfigPage() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [previewConfig, setPreviewConfig] = useState<SiteConfig>(defaultConfig);
   const [isMobileView, setIsMobileView] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cardImageInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -83,6 +102,27 @@ export default function ConfigPage() {
         const data = await response.json();
         updatePreview("banner", { avatar: data.url });
         toast({ title: "上传成功", description: "头像已更新" });
+      } else {
+        throw new Error("Upload failed");
+      }
+    } catch {
+      toast({ title: "上传失败", description: "上传图片时出错", variant: "destructive" });
+    }
+  };
+
+  const handleCardImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, cardId: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await fetch("/api/upload", { method: "POST", body: formData });
+      if (response.ok) {
+        const data = await response.json();
+        updateCard(cardId, { image: data.url });
+        toast({ title: "上传成功", description: "卡片图片已更新" });
       } else {
         throw new Error("Upload failed");
       }
@@ -445,6 +485,25 @@ export default function ConfigPage() {
                   <Label className="text-sm mb-2 block">内容</Label>
                   <Textarea value={card.body || ""} onChange={(e) => updateCard(card.id, { body: e.target.value })} className="rounded-lg resize-none" rows={2} data-testid={`input-card-body-${card.id}`} />
                 </div>
+                <div>
+                  <Label className="text-sm mb-2 block">卡片图片</Label>
+                  <div className="flex items-center gap-3">
+                    {card.image ? (
+                      <img src={card.image} alt="卡片图片" className="w-16 h-16 rounded-lg object-cover border" />
+                    ) : (
+                      <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center">
+                        <Image className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="flex-1 space-y-2">
+                      <Input type="text" value={card.image || ""} onChange={(e) => updateCard(card.id, { image: e.target.value })} className="rounded-lg text-sm" placeholder="输入图片URL或上传图片" data-testid={`input-card-image-${card.id}`} />
+                      <input ref={cardImageInputRef} type="file" accept="image/*" onChange={(e) => handleCardImageUpload(e, card.id)} className="hidden" />
+                      <Button variant="secondary" size="sm" onClick={() => cardImageInputRef.current?.click()} className="rounded-lg gap-2 h-8">
+                        <Upload className="w-3 h-3" />上传图片
+                      </Button>
+                    </div>
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm">链接 ({card.links.length})</Label>
@@ -453,12 +512,26 @@ export default function ConfigPage() {
                     </Button>
                   </div>
                   {card.links.map((link) => (
-                    <div key={link.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-                      <Input type="text" value={link.label} onChange={(e) => updateLink(card.id, link.id, { label: e.target.value })} className="flex-1 h-8 rounded-lg text-sm" placeholder="名称" />
-                      <Input type="text" value={link.url || ""} onChange={(e) => updateLink(card.id, link.id, { url: e.target.value })} className="flex-1 h-8 rounded-lg text-sm" placeholder="链接" />
-                      <Button variant="ghost" size="icon" onClick={() => removeLink(card.id, link.id)} className="h-8 w-8 rounded-lg text-destructive">
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
+                    <div key={link.id} className="space-y-2 p-2 rounded-lg bg-muted/50">
+                      <div className="flex items-center gap-2">
+                        <Input type="text" value={link.label} onChange={(e) => updateLink(card.id, link.id, { label: e.target.value })} className="flex-1 h-8 rounded-lg text-sm" placeholder="名称" />
+                        <Input type="text" value={link.url || ""} onChange={(e) => updateLink(card.id, link.id, { url: e.target.value })} className="flex-1 h-8 rounded-lg text-sm" placeholder="链接" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Select value={link.icon || "globe"} onValueChange={(value) => updateLink(card.id, link.id, { icon: value })}>
+                          <SelectTrigger className="flex-1 h-8 rounded-lg text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ICON_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button variant="ghost" size="icon" onClick={() => removeLink(card.id, link.id)} className="h-8 w-8 rounded-lg text-destructive">
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

@@ -6,43 +6,46 @@ A production-ready web application for managing and displaying a VTuber's song l
 
 ## Recent Changes (December 25, 2025)
 
+### 🆕 Card Image Upload & Icon Selection (Latest)
+- **Card Image Upload**: Upload/URL input for card images with preview
+  - Supports JPG, PNG, WebP formats (max 5MB)
+  - Images display at 320x180px with object-fit: cover
+  - Real-time preview in config panel
+  - Stored in `/uploads/` directory
+
+- **Link Icon Selection**: 13+ icon options for card links
+  - Social media: Twitter, YouTube, Bilibili, Facebook, Instagram, LinkedIn
+  - Utilities: Globe, GitHub, Mail, Phone, MapPin, Link, Share
+  - Dropdown selector in link editor
+  - Icons render in CardLinkItem component
+
+### Earlier Updates
 - **Hero Hotspot Trigger System**
-  - Precise hover trigger area: only avatar/title triggers card reveal (not entire hero row)
+  - Precise hover trigger area: only avatar/title triggers card reveal
   - Configurable hotspot settings: target, showHint, hintText, debounceMs
-  - Controls appear in config page only when mode is "hoverReveal"
 
 - **Smooth Two-Stage Animation**
   - Two-stage state: expanded (controls animation), shouldRender (controls DOM)
-  - Debounced exit (80-150ms) prevents flicker when moving between hotspot and cards
-  - Opacity + transform animations for smooth transitions
-  - Cards container has separate mouse handlers to keep reveal active
+  - Debounced exit prevents flicker when moving between hotspot and cards
 
 - **Click Entire Row to Copy**
-  - Click anywhere on song table row (desktop/mobile) triggers copy
+  - Click anywhere on song table row triggers copy
   - Format: "点歌 {songName}" with configurable template
-  - Keyboard accessible (Enter/Space)
-  - Toast notification on successful copy
 
 - **Auto Pinyin Initial Generation**
-  - Mandarin songs auto-generate pinyinInitial (A-Z) from first Chinese character
+  - Mandarin songs auto-generate pinyinInitial (A-Z) from first character
   - Uses pinyin-pro library for conversion
-  - Manual selection removed from /yu admin page
-  - Displays auto-detected initial in add/edit dialogs
 
 - **Filter Hint Text**
-  - Configurable hint text above the search bar
-  - Customizable alignment (left/center/right), font size, and color
-  - Auto or manual color mode matching theme
+  - Configurable hint text above search bar
+  - Customizable alignment, font size, and color
 
-- **Full MVP Implementation Complete**
+- **Full MVP Implementation**
   - Homepage with hero banner, hover-reveal cards, and song table
   - Config page (/config) with five-tab layout and live preview
   - Song admin page (/yu) with full CRUD operations
   - JSON file persistence for config and songs data
   - Password-protected admin pages (default: vtuber123)
-  - Independent filter states (language, captain, search)
-  - Mandarin pinyin initial filter (A-Z)
-  - Auto text color for readability based on background
 
 ## User Preferences
 
