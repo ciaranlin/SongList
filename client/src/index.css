@@ -2,51 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
-/* LIGHT MODE */
+/* VTuber Pastel Theme - Custom Properties */
 :root {
+  /* Base pastel VTuber colors */
+  --vtuber-bg: #A9BAC4;
+  --vtuber-card-bg: rgba(255, 255, 255, 0.22);
+  --vtuber-card-border: rgba(255, 255, 255, 0.35);
+  --vtuber-button-bg: rgba(255, 255, 255, 0.45);
+  --vtuber-button-hover: rgba(255, 255, 255, 0.60);
+  --vtuber-table-bg: #FFFFFF;
+  --vtuber-divider: rgba(0, 0, 0, 0.08);
+  --vtuber-text-dark: #1B1B1B;
+  --vtuber-text-light: #FFFFFF;
+  
+  /* Shadcn variables with VTuber pastel twist */
   --button-outline: rgba(0,0,0, .10);
   --badge-outline: rgba(0,0,0, .05);
   --opaque-button-border-intensity: -8;
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
-  --background: 210 15% 92%;
+  --background: 203 18% 73%;
   --foreground: 210 15% 12%;
-  --border: 210 12% 85%;
-  --card: 210 15% 96%;
+  --border: 203 15% 80%;
+  --card: 0 0% 100%;
   --card-foreground: 210 15% 12%;
-  --card-border: 210 12% 90%;
-  --sidebar: 210 15% 94%;
+  --card-border: 203 15% 85%;
+  --sidebar: 203 18% 70%;
   --sidebar-foreground: 210 15% 15%;
-  --sidebar-border: 210 12% 88%;
+  --sidebar-border: 203 15% 75%;
   --sidebar-primary: 205 85% 45%;
   --sidebar-primary-foreground: 205 85% 98%;
-  --sidebar-accent: 210 18% 88%;
+  --sidebar-accent: 203 20% 78%;
   --sidebar-accent-foreground: 210 18% 18%;
   --sidebar-ring: 205 85% 45%;
-  --popover: 210 16% 91%;
+  --popover: 0 0% 100%;
   --popover-foreground: 210 16% 14%;
-  --popover-border: 210 12% 84%;
-  --primary: 205 85% 45%;
+  --popover-border: 203 15% 85%;
+  --primary: 205 75% 50%;
   --primary-foreground: 205 85% 98%;
-  --secondary: 210 18% 86%;
+  --secondary: 203 20% 85%;
   --secondary-foreground: 210 18% 16%;
-  --muted: 210 16% 89%;
+  --muted: 203 18% 80%;
   --muted-foreground: 210 16% 42%;
-  --accent: 208 20% 88%;
+  --accent: 203 22% 82%;
   --accent-foreground: 208 20% 18%;
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 72% 98%;
-  --input: 210 15% 65%;
-  --ring: 205 85% 45%;
+  --input: 203 18% 70%;
+  --ring: 205 75% 50%;
   --chart-1: 205 85% 42%;
   --chart-2: 200 75% 45%;
   --chart-3: 195 70% 48%;
   --chart-4: 190 65% 50%;
   --chart-5: 185 60% 52%;
-  --font-sans: Open Sans, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', 'Open Sans', system-ui, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
-  --radius: .5rem;
+  --radius: 1rem;
   --shadow-2xs: 0px 2px 0px 0px hsl(210 15% 20% / 0.02);
   --shadow-xs: 0px 2px 0px 0px hsl(210 15% 20% / 0.03);
   --shadow-sm: 0px 2px 0px 0px hsl(210 15% 20% / 0.02), 0px 1px 2px -1px hsl(210 15% 20% / 0.05);
@@ -58,31 +70,25 @@
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 
-/* Fallback for older browsers */
+  /* Fallback for older browsers */
   --sidebar-primary-border: hsl(var(--sidebar-primary));
   --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 
-  /* Fallback for older browsers */
   --sidebar-accent-border: hsl(var(--sidebar-accent));
   --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 
-  /* Fallback for older browsers */
   --primary-border: hsl(var(--primary));
   --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 
-  /* Fallback for older browsers */
   --secondary-border: hsl(var(--secondary));
   --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 
-  /* Fallback for older browsers */
   --muted-border: hsl(var(--muted));
   --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 
-  /* Fallback for older browsers */
   --accent-border: hsl(var(--accent));
   --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 
-  /* Fallback for older browsers */
   --destructive-border: hsl(var(--destructive));
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 }
@@ -136,31 +142,24 @@
   --shadow-xl: 0px 2px 0px 0px hsl(210 12% 0% / 0.30), 0px 8px 10px -1px hsl(210 12% 0% / 0.45);
   --shadow-2xl: 0px 2px 0px 0px hsl(210 12% 0% / 0.50);
 
-/* Fallback for older browsers */
   --sidebar-primary-border: hsl(var(--sidebar-primary));
   --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 
-  /* Fallback for older browsers */
   --sidebar-accent-border: hsl(var(--sidebar-accent));
   --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 
-  /* Fallback for older browsers */
   --primary-border: hsl(var(--primary));
   --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 
-  /* Fallback for older browsers */
   --secondary-border: hsl(var(--secondary));
   --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 
-  /* Fallback for older browsers */
   --muted-border: hsl(var(--muted));
   --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 
-  /* Fallback for older browsers */
   --accent-border: hsl(var(--accent));
   --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 
-  /* Fallback for older browsers */
   --destructive-border: hsl(var(--destructive));
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 }
@@ -175,29 +174,46 @@
   }
 }
 
-/**
- * Using the elevate system.
- * Automatic contrast adjustment.
- *
- * <element className="hover-elevate" />
- * <element className="active-elevate-2" />
- *
- * // Using the tailwind utility when a data attribute is "on"
- * <element className="toggle-elevate data-[state=on]:toggle-elevated" />
- * // Or manually controlling the toggle state
- * <element className="toggle-elevate toggle-elevated" />
- *
- * Elevation systems have to handle many states.
- * - not-hovered, vs. hovered vs. active  (three mutually exclusive states)
- * - toggled or not
- * - focused or not (this is not handled with these utilities)
- *
- * Even without handling focused or not, this is six possible combinations that
- * need to be distinguished from eachother visually.
- */
-@layer utilities {
+/* VTuber specific styles */
+@layer components {
+  .vtuber-glass {
+    background: var(--vtuber-card-bg);
+    border: 1px solid var(--vtuber-card-border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  
+  .vtuber-button {
+    background: var(--vtuber-button-bg);
+    border: 1px solid var(--vtuber-card-border);
+    transition: all 0.2s ease;
+  }
+  
+  .vtuber-button:hover {
+    background: var(--vtuber-button-hover);
+  }
+  
+  .vtuber-table {
+    background: var(--vtuber-table-bg);
+  }
+  
+  .text-auto-color {
+    color: var(--vtuber-text-dark);
+  }
+  
+  .text-auto-color-light {
+    color: var(--vtuber-text-light);
+  }
 
-  /* Hide ugly search cancel button in Chrome until we can style it properly */
+  /* Smooth card transitions for hover reveal */
+  .hover-card-container {
+    transition: opacity var(--hover-fade-in, 250ms) ease, 
+                visibility var(--hover-fade-in, 250ms) ease;
+  }
+}
+
+@layer utilities {
+  /* Hide ugly search cancel button in Chrome */
   input[type="search"]::-webkit-search-cancel-button {
     @apply hidden;
   }
@@ -209,42 +225,27 @@
     pointer-events: none;
   }
 
-  /* .no-default-hover-elevate/no-default-active-elevate is an escape hatch so consumers of
-   * buttons/badges can remove the automatic brightness adjustment on interactions
-   * and program their own. */
   .no-default-hover-elevate {}
-
   .no-default-active-elevate {}
 
-
-  /**
-   * Toggleable backgrounds go behind the content. Hoverable/active goes on top.
-   * This way they can stack/compound. Both will overlap the parent's borders!
-   * So borders will be automatically adjusted both on toggle, and hover/active,
-   * and they will be compounded.
-   */
   .toggle-elevate::before,
   .toggle-elevate-2::before {
     content: "";
     pointer-events: none;
     position: absolute;
     inset: 0px;
-    /*border-radius: inherit;   match rounded corners */
     border-radius: inherit;
     z-index: -1;
-    /* sits behind content but above backdrop */
   }
 
   .toggle-elevate.toggle-elevated::before {
     background-color: var(--elevate-2);
   }
 
-  /* If there's a 1px border, adjust the inset so that it covers that parent's border */
   .border.toggle-elevate::before {
     inset: -1px;
   }
 
-  /* Does not work on elements with overflow:hidden! */
   .hover-elevate:not(.no-default-hover-elevate),
   .active-elevate:not(.no-default-active-elevate),
   .hover-elevate-2:not(.no-default-hover-elevate),
@@ -261,10 +262,8 @@
     pointer-events: none;
     position: absolute;
     inset: 0px;
-    /*border-radius: inherit;   match rounded corners */
     border-radius: inherit;
     z-index: 999;
-    /* sits in front of content */
   }
 
   .hover-elevate:hover:not(.no-default-hover-elevate)::after,
@@ -277,12 +276,29 @@
     background-color: var(--elevate-2);
   }
 
-  /* If there's a 1px border, adjust the inset so that it covers that parent's border */
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after,
   .border.active-elevate:not(.no-active-interaction-elevate)::after,
   .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after,
-  .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
-  .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
+  .border.active-elevate-2:not(.no-active-interaction-elevate)::after {
     inset: -1px;
+  }
+
+  /* Scrollbar styling */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.25);
   }
 }
