@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
 import { type SiteConfig, type Song } from "@shared/schema";
 import { getAutoTextColor } from "@/lib/config-context";
-import { Search, Anchor, X } from "lucide-react";
+import { Search, Anchor, X, Dice6 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 
 interface FilterBarProps {
   config: SiteConfig;
@@ -29,10 +30,18 @@ export function FilterBar({ config, songs, onFilteredSongsChange }: FilterBarPro
   const [selectedPinyin, setSelectedPinyin] = useState<string | null>(null);
   const [captainOnly, setCaptainOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { toast } = useToast();
 
   const textColor = config.theme.textColorMode === "auto" 
     ? getAutoTextColor(config.theme.background) 
     : config.theme.manualTextColor;
+
+  // Defensive defaults for copyConfig
+  const copyConfig = config.copyConfig ?? {
+    enabled: true,
+    template: "点歌 {songName}",
+    toastEnabled: true,
+  };
 
   // Defensive defaults for filterHint
   const filterHint = config.filterHint ?? {
@@ -106,6 +115,55 @@ export function FilterBar({ config, songs, onFilteredSongsChange }: FilterBarPro
 
   const hasActiveFilters = selectedLanguage !== "All" || selectedPinyin || captainOnly || searchQuery;
 
+  // Random copy song function
+  const handleRandomCopy = async () => {
+    if (!copyConfig.enabled) return;
+
+    if (filteredSongs.length === 0) {
+      toast({
+        title: "当前没有可随机的歌曲",
+        description: "尝试调整筛选条件",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Randomly select a song from filtered list
+    const randomIndex = Math.floor(Math.random() * filteredSongs.length);
+    const randomSong = filteredSongs[randomIndex];
+    const copyText = copyConfig.template.replace("{songName}", randomSong.songName);
+    
+    try {
+      // Try modern clipboard API first
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(copyText);
+      } else {
+        // Fallback to execCommand
+        const textArea = document.createElement("textarea");
+        textArea.value = copyText;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+
+      if (copyConfig.toastEnabled) {
+        toast({
+          title: "已随机复制",
+          description: `${randomSong.songName} - ${randomSong.singer}`,
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "复制失败",
+        description: "请手动复制歌名",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div 
       className="w-full px-4"
@@ -119,30 +177,36 @@ export function FilterBar({ config, songs, onFilteredSongsChange }: FilterBarPro
         className="vtuber-glass rounded-2xl p-3 sm:p-4 flex flex-col gap-3 sm:gap-4"
         style={{ backdropFilter: "blur(12px)" }}
       >
-        {/* Filter Hint Text */}
-        {filterHint.enabled && (
-          <div 
-            className="px-1"
-            style={{
-              textAlign: filterHint.align,
-            }}
-            data-testid="filter-hint"
-          >
-            <span
-              style={{
-                color: hintColor,
-                fontSize: `${filterHint.fontSize}px`,
-                opacity: 0.8,
-              }}
+        {/* Row 1: Hint Text */}
+        <div className="flex justify-between items-center px-1" data-testid="row-hints">
+          {/* Left Hint: Filter Region */}
+          {filterHint.enabled && (
+            <div data-testid="filter-hint">
+              <span
+                style={{
+                  color: hintColor,
+                  fontSize: "14px",
+                  opacity: 0.8,
+                }}
+              >
+                {filterHint.text}
+              </span>
+            </div>
+          )}
+          
+          {/* Right Hint: Search Region */}
+          <div style={{ width: "fit-content" }}>
+            <div 
+              style={{ color: textColor, opacity: 0.6, fontSize: "14px" }}
             >
-              {filterHint.text}
-            </span>
+              行内点击即可复制
+            </div>
           </div>
-        )}
+        </div>
 
-        {/* Top row: Language tabs + Search + Captain + Clear */}
-        <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3">
-          {/* Language Tabs - scrollable on mobile */}
+        {/* Row 2: Controls (Language tabs + Search + Captain) */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3" data-testid="row-controls">
+          {/* Left: Language Tabs - scrollable on mobile */}
           <div 
             className="flex items-center gap-1 p-1 rounded-xl overflow-x-auto"
             style={{ background: "rgba(255,255,255,0.25)" }}
@@ -174,13 +238,13 @@ export function FilterBar({ config, songs, onFilteredSongsChange }: FilterBarPro
             ))}
           </div>
 
-          {/* Spacer - hidden on mobile */}
-          <div className="hidden sm:block flex-1" />
+          {/* Spacer between language tabs and right section */}
+          <div className="hidden sm:flex flex-1"></div>
 
-          {/* Search and Captain row */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* Search Input */}
-            <div className="relative flex-1 sm:flex-none">
+          {/* Right Section: Search + Captain Button */}
+          <div className="flex items-center gap-3">
+            {/* Middle: Search Input */}
+            <div className="relative flex-1 sm:flex-none" style={{ minWidth: "140px" }}>
               <Search 
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" 
                 style={{ color: textColor, opacity: 0.5 }}
@@ -192,7 +256,6 @@ export function FilterBar({ config, songs, onFilteredSongsChange }: FilterBarPro
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 h-10 rounded-xl border-0 w-full"
                 style={{
-                  minWidth: "140px",
                   maxWidth: config.filterBar.searchInputWidth,
                   background: "rgba(255,255,255,0.45)",
                   color: textColor,
@@ -201,30 +264,31 @@ export function FilterBar({ config, songs, onFilteredSongsChange }: FilterBarPro
               />
             </div>
 
-            {/* Captain Toggle */}
-            <Button
-              variant={captainOnly ? "default" : "secondary"}
-              size="default"
-              onClick={() => setCaptainOnly(!captainOnly)}
-              className={`rounded-xl gap-2 whitespace-nowrap ${captainOnly ? "" : "vtuber-button border-0"}`}
-              data-testid="button-captain-filter"
-            >
-              <Anchor className="w-4 h-4" />
-              <span className="hidden sm:inline">舰长点歌</span>
-            </Button>
-
-            {/* Clear Filters */}
-            {hasActiveFilters && (
+            {/* Right: Captain Button */}
+            <div className="flex items-center gap-2">
+              {/* Clear Filters */}
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={clearFilters}
+                  className="rounded-xl flex-shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              )}
+              
               <Button
-                variant="ghost"
-                size="icon"
-                onClick={clearFilters}
-                className="rounded-xl flex-shrink-0"
-                data-testid="button-clear-filters"
+                variant={captainOnly ? "default" : "secondary"}
+                size="default"
+                onClick={() => setCaptainOnly(!captainOnly)}
+                className={`rounded-xl gap-2 whitespace-nowrap ${captainOnly ? "" : "vtuber-button border-0"}`}
+                data-testid="button-captain-filter"
               >
-                <X className="w-4 h-4" />
+                <Anchor className="w-4 h-4" />
+                <span className="hidden sm:inline">舰长点歌</span>
               </Button>
-            )}
+            </div>
           </div>
         </div>
 
@@ -253,42 +317,57 @@ export function FilterBar({ config, songs, onFilteredSongsChange }: FilterBarPro
           </div>
         )}
 
-        {/* Active Filters Summary */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span 
-            className="text-sm"
-            style={{ color: textColor, opacity: 0.7 }}
-          >
-            筛选:
-          </span>
-          {selectedLanguage !== "All" && (
-            <Badge variant="secondary" className="rounded-full" data-testid="badge-language-filter">
-              {LANGUAGE_LABELS[selectedLanguage]}
-            </Badge>
-          )}
-          {selectedPinyin && (
-            <Badge variant="secondary" className="rounded-full" data-testid="badge-pinyin-filter">
-              首字母: {selectedPinyin}
-            </Badge>
-          )}
-          {captainOnly && (
-            <Badge variant="secondary" className="rounded-full" data-testid="badge-captain-filter">
-              舰长点歌
-            </Badge>
-          )}
-          {searchQuery && (
-            <Badge variant="secondary" className="rounded-full" data-testid="badge-search-filter">
-              搜索: {searchQuery}
-            </Badge>
-          )}
-          {!hasActiveFilters && (
+        {/* Row 3: Filter Summary + Random Copy */}
+        <div className="flex items-center justify-between gap-3" data-testid="row-status">
+          {/* Left: Filter Summary */}
+          <div className="flex flex-wrap items-center gap-2">
             <span 
               className="text-sm"
-              style={{ color: textColor, opacity: 0.5 }}
+              style={{ color: textColor, opacity: 0.7 }}
             >
-              无
+              筛选:
             </span>
-          )}
+            {selectedLanguage !== "All" && (
+              <Badge variant="secondary" className="rounded-full" data-testid="badge-language-filter">
+                {LANGUAGE_LABELS[selectedLanguage]}
+              </Badge>
+            )}
+            {selectedPinyin && (
+              <Badge variant="secondary" className="rounded-full" data-testid="badge-pinyin-filter">
+                首字母: {selectedPinyin}
+              </Badge>
+            )}
+            {captainOnly && (
+              <Badge variant="secondary" className="rounded-full" data-testid="badge-captain-filter">
+                舰长点歌
+              </Badge>
+            )}
+            {searchQuery && (
+              <Badge variant="secondary" className="rounded-full" data-testid="badge-search-filter">
+                搜索: {searchQuery}
+              </Badge>
+            )}
+            {!hasActiveFilters && (
+              <span 
+                className="text-sm"
+                style={{ color: textColor, opacity: 0.5 }}
+              >
+                无
+              </span>
+            )}
+          </div>
+
+          {/* Right: Random Copy Button */}
+          <Button
+            variant="secondary"
+            size="default"
+            onClick={handleRandomCopy}
+            className="rounded-xl gap-2 vtuber-button border-0 whitespace-nowrap"
+            data-testid="button-random-copy"
+          >
+            <Dice6 className="w-4 h-4" />
+            <span className="hidden sm:inline">随机复制一首歌</span>
+          </Button>
         </div>
       </div>
     </div>

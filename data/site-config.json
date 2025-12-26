@@ -18,6 +18,31 @@
       "hintSize": "13px"
     }
   },
+  "avatarConfig": {
+    "size": 160,
+    "borderWidth": "2px",
+    "borderColor": "rgba(255,255,255,0.35)",
+    "borderRadius": "50%"
+  },
+  "cardLayout": {
+    "mode": "columns",
+    "areaHeight": "42vh",
+    "columnCount": 3,
+    "cardWidth": "280px",
+    "cardGap": 12,
+    "mobileColumnCount": 1
+  },
+  "cardImageConfig": {
+    "fit": "cover",
+    "posX": 50,
+    "posY": 52,
+    "scale": 1.1,
+    "boxWidth": "100%",
+    "boxHeight": "270px",
+    "borderRadius": "8px",
+    "padding": "0px",
+    "backgroundColor": "transparent"
+  },
   "hoverBehavior": {
     "enabled": true,
     "showOnHeroHover": true,
@@ -40,7 +65,7 @@
   },
   "heroHotspot": {
     "enabled": true,
-    "target": "title",
+    "target": "avatar",
     "sizePx": 80,
     "showHint": true,
     "hintText": "移入展开",
@@ -99,9 +124,10 @@
       }
     },
     {
-      "id": "card-2",
-      "title": "点歌说明",
-      "body": "舰长可以在直播期间点歌哦！",
+      "id": "card-1766740872726",
+      "title": "",
+      "body": "",
+      "image": "/uploads/4b606f91-e022-4441-961d-e4a62ca40916.jpg",
       "links": [],
       "styles": {
         "padding": "16px",

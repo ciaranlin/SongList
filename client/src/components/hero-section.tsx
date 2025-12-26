@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { type SiteConfig, type Card as CardType } from "@shared/schema";
+import { type SiteConfig, type Card as CardType, cardImageConfigSchema } from "@shared/schema";
 import { getAutoTextColor } from "@/lib/config-context";
 import { Music, ExternalLink, Twitter, Youtube, Globe, ChevronDown, ChevronUp } from "lucide-react";
 import { SiBilibili } from "react-icons/si";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 interface HeroSectionProps {
   config: SiteConfig;
   isMobile: boolean;
+  onCapacityChange?: (isFull: boolean, maxCards: number) => void;
 }
 
 function getIconComponent(iconName?: string) {
@@ -67,10 +68,12 @@ function CardLinkItem({ link, textColor }: { link: CardType["links"][0]; textCol
   );
 }
 
-function HoverCard({ card, textColor }: { card: CardType; textColor: string }) {
+function HoverCard({ card, textColor, config }: { card: CardType; textColor: string; config: SiteConfig }) {
+  const imageConfig = config.cardImageConfig ?? cardImageConfigSchema.parse({});
+  
   return (
     <div
-      className="flex flex-col gap-3"
+      className="flex flex-col gap-3 break-inside-avoid-column"
       style={{
         padding: card.styles.padding,
         borderRadius: card.styles.borderRadius,
@@ -83,12 +86,31 @@ function HoverCard({ card, textColor }: { card: CardType; textColor: string }) {
       data-testid={`card-${card.id}`}
     >
       {card.image && (
-        <img 
-          src={card.image} 
-          alt={card.title} 
-          className="w-full h-32 rounded-lg object-cover"
-          style={{ borderRadius: "8px" }}
-        />
+        <div 
+          style={{
+            width: imageConfig.boxWidth,
+            height: imageConfig.boxHeight,
+            padding: imageConfig.padding,
+            backgroundColor: imageConfig.backgroundColor,
+            borderRadius: imageConfig.borderRadius,
+            overflow: "hidden",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <img 
+            src={card.image} 
+            alt={card.title} 
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: imageConfig.fit,
+              objectPosition: `${imageConfig.posX}% ${imageConfig.posY}%`,
+              transform: `scale(${imageConfig.scale})`,
+            }}
+          />
+        </div>
       )}
 
       <h3
@@ -126,8 +148,40 @@ function HoverCard({ card, textColor }: { card: CardType; textColor: string }) {
   );
 }
 
-export function HeroSection({ config, isMobile }: HeroSectionProps) {
-  const { banner, theme, cards } = config;
+export function HeroSection({ config, isMobile, onCapacityChange }: HeroSectionProps) {
+  const banner = config.banner ?? {
+    avatar: "",
+    title: "歌单列表",
+    subtitle: "欢迎来到我的歌单",
+    hint: "移入查看更多",
+    styles: {
+      titleSize: "44px",
+      titleWeight: "700",
+      subtitleSize: "28px",
+      subtitleWeight: "500",
+      hintSize: "13px",
+    },
+  };
+  const theme = config.theme ?? {
+    background: "#A9BAC4",
+    textColorMode: "auto" as const,
+    manualTextColor: "#1B1B1B",
+  };
+  const cards = config.cards ?? [];
+  const cardLayout = config.cardLayout ?? {
+    mode: "columns" as const,
+    areaHeight: "600px",
+    columnCount: 1,
+    cardWidth: "300px", // 调整卡片宽度，确保三列时充满卡片区域
+    cardGap: 12, // 保持合理间距
+    mobileColumnCount: 1
+  };
+  const avatarConfig = config.avatarConfig ?? {
+    size: 160,
+    borderWidth: "2px",
+    borderColor: "rgba(255,255,255,0.35)",
+    borderRadius: "50%"
+  };
   const heroRef = useRef<HTMLDivElement>(null);
   const avatarRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -248,7 +302,10 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
     };
   }, []);
 
-  const cardContainerWidth = 320;
+  // Calculate hero shift amount based on card width and gap
+  const cardContainerWidth = cardLayout.cardWidth.includes("%") 
+    ? 320 // default for percentage width
+    : parseInt(cardLayout.cardWidth) || 320;
   const autoShift = hasCards ? (cardContainerWidth / 2) + (heroCards.gapPx / 2) : 0;
   const heroShiftAmount = heroCards.heroShiftPx > 0 ? heroCards.heroShiftPx : autoShift;
 
@@ -259,6 +316,8 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
   };
 
   const cardsVisible = isOffMode || expanded;
+
+
 
   if (isMobile) {
     return (
@@ -358,7 +417,7 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
             >
               <div className="flex flex-col gap-4 mt-4">
                 {cards.map((card) => (
-                  <HoverCard key={card.id} card={card} textColor={textColor} />
+                  <HoverCard key={card.id} card={card} textColor={textColor} config={config} />
                 ))}
               </div>
             </div>
@@ -369,7 +428,7 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
           <div className="px-4 pb-4">
             <div className="flex flex-col gap-4">
               {cards.map((card) => (
-                <HoverCard key={card.id} card={card} textColor={textColor} />
+                <HoverCard key={card.id} card={card} textColor={textColor} config={config} />
               ))}
             </div>
           </div>
@@ -378,8 +437,19 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
     );
   }
 
+  // Fix hover hotspot to only trigger on visible area of avatar
+  const handleAvatarHover = useCallback((event: React.MouseEvent) => {
+    if (!isHoverMode || isMobile) return;
+    
+    // Only trigger if hover is actually on the avatar image, not on empty space
+    const target = event.target as HTMLElement;
+    if (target.tagName === 'IMG' || target === avatarRef.current) {
+      handleHotspotEnter();
+    }
+  }, [isHoverMode, isMobile, handleHotspotEnter]);
+
   const hotspotHandlers = heroHotspot.enabled && isHoverMode
-    ? { onMouseEnter: handleHotspotEnter }
+    ? { onMouseEnter: handleAvatarHover }
     : {};
 
   const legacyHoverHandlers = !heroHotspot.enabled && isHoverMode
@@ -412,36 +482,235 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
     : {};
 
 
+  // Calculate the number of card columns
+  const [cardColumns, setCardColumns] = useState(1);
+  const [cards3plus, setCards3plus] = useState(false);
+  const [maxCards, setMaxCards] = useState(0);
+  const [isCapacityFull, setIsCapacityFull] = useState(false);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Update cardRefs array when cards change
+  useEffect(() => {
+    cardRefs.current = cardRefs.current.slice(0, cards.length);
+  }, [cards.length]);
+
+  // Calculate columns and capacity using ResizeObserver for accurate DOM measurements
+  useEffect(() => {
+    if (!cardsContainerRef.current || !hasCards) return;
+
+    const container = cardsContainerRef.current;
+    let resizeObserver: ResizeObserver | null = null;
+
+    // Combined function to calculate both columns and capacity
+    const calculateLayout = () => {
+      // Get cardsInner element
+      const cardsInner = container.querySelector('.cardsInner');
+      if (!cardsInner) return;
+
+      // Get actual DOM dimensions using getBoundingClientRect for more accurate measurements
+      const cardsInnerRect = cardsInner.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      
+      const cardsInnerWidth = cardsInnerRect.width;
+      const containerHeight = containerRect.height;
+      
+      const cardWidth = parseInt(cardLayout.cardWidth) || 260;
+      const columnGap = cardLayout.cardGap || 12;
+      
+      // Calculate number of columns based on actual width, but cap at 3
+      const columnWidthWithGap = cardWidth + columnGap;
+      const numColumns = Math.min(3, Math.max(1, Math.floor((cardsInnerWidth + columnGap) / columnWidthWithGap)));
+      
+      setCardColumns(numColumns);
+      setCards3plus(numColumns > 2);
+
+      // Evaluate capacity based on actual CSS Multi-Column layout and real DOM measurements
+      const evaluateCapacity = () => {
+        // Get all card elements
+        const cardElements = Array.from(cardsInner.querySelectorAll('[data-testid^="card-"]'));
+        if (cardElements.length === 0) return;
+
+        // Get the actual margin bottom from the first card
+        const firstCardStyle = window.getComputedStyle(cardElements[0].parentElement || cardElements[0]);
+        const cardMarginBottom = parseFloat(firstCardStyle.marginBottom) || 0;
+        
+        // Calculate available height in each column
+        const availableHeight = containerHeight;
+        
+        // Track the position of each card to determine column placement
+        const cardPositions: { top: number; bottom: number; column: number }[] = [];
+        
+        // Get the actual position of each card in the DOM
+        cardElements.forEach((cardEl, index) => {
+          const cardRect = cardEl.getBoundingClientRect();
+          const cardsInnerRect = cardsInner.getBoundingClientRect();
+          
+          // Calculate relative position within cardsInner
+          const top = cardRect.top - cardsInnerRect.top;
+          const bottom = cardRect.bottom - cardsInnerRect.top;
+          
+          // Determine which column the card is in
+          let column = 0;
+          if (index > 0) {
+            // Find the previous card that is in a different column (more than cardWidth to the left)
+            for (let i = index - 1; i >= 0; i--) {
+              const prevCardEl = cardElements[i];
+              const prevCardRect = prevCardEl.getBoundingClientRect();
+              
+              if (Math.abs(prevCardRect.left - cardRect.left) > cardWidth / 2) {
+                // This is likely the first card in a new column
+                column = cardPositions[i].column + 1;
+                break;
+              }
+            }
+          }
+          
+          cardPositions.push({ top, bottom, column });
+        });
+        
+        // Group cards by column
+        const columns: { cards: typeof cardPositions[]; maxBottom: number }[] = [];
+        cardPositions.forEach(pos => {
+          if (!columns[pos.column]) {
+            columns[pos.column] = { cards: [], maxBottom: 0 };
+          }
+          columns[pos.column].cards.push(pos);
+          columns[pos.column].maxBottom = Math.max(columns[pos.column].maxBottom, pos.bottom + cardMarginBottom);
+        });
+        
+        // Calculate maximum cards by checking if all current cards fit within the container
+        let maxCapacity = cards.length;
+        let isFull = false;
+        
+        // Check if any column exceeds the container height
+        const anyColumnExceeds = columns.some(col => col.maxBottom > availableHeight);
+        
+        if (anyColumnExceeds) {
+          // If any column exceeds, we need to reduce capacity
+          // Find the first card that causes overflow
+          for (let i = cardPositions.length - 1; i >= 0; i--) {
+            const pos = cardPositions[i];
+            const column = columns[pos.column];
+            
+            // Remove this card and see if column fits
+            const newColumnCards = column.cards.filter(c => c !== pos);
+            const newColumnMaxBottom = newColumnCards.length > 0 
+              ? Math.max(...newColumnCards.map(c => c.bottom + cardMarginBottom)) 
+              : 0;
+            
+            if (newColumnMaxBottom <= availableHeight) {
+              // This is the first card that causes overflow
+              maxCapacity = i;
+              break;
+            }
+          }
+          
+          isFull = true;
+        } else {
+          // Check if we can fit one more card
+          const firstCardHeight = cardElements[0].getBoundingClientRect().height + cardMarginBottom;
+          const shortestColumn = columns.reduce((prev, curr) => 
+            prev.maxBottom < curr.maxBottom ? prev : curr
+          );
+          
+          if (shortestColumn.maxBottom + firstCardHeight > availableHeight) {
+            // Cannot fit another card
+            isFull = true;
+          }
+        }
+        
+        // Ensure maxCapacity is at least 0
+        maxCapacity = Math.max(0, maxCapacity);
+        
+        setMaxCards(maxCapacity);
+        setIsCapacityFull(isFull);
+        
+        // Notify parent component about capacity change
+        if (onCapacityChange) {
+          onCapacityChange(isFull, maxCapacity);
+        }
+      };
+
+      evaluateCapacity();
+    };
+
+    // Initial calculation
+    calculateLayout();
+
+    // Use ResizeObserver to monitor real DOM size changes
+    resizeObserver = new ResizeObserver(() => {
+      requestAnimationFrame(calculateLayout);
+    });
+
+    // Observe multiple elements that can affect the layout
+    const elementsToObserve: HTMLElement[] = [container];
+    const cardsInner = container.querySelector('.cardsInner');
+    if (cardsInner) elementsToObserve.push(cardsInner as HTMLElement);
+    
+    // Also observe all card elements for changes in content size
+    const cardElements = container.querySelectorAll('[data-testid^="card-"]');
+    cardElements.forEach(cardEl => elementsToObserve.push(cardEl as HTMLElement));
+    
+    // Observe all elements
+    elementsToObserve.forEach(el => resizeObserver!.observe(el));
+
+    // Also observe window resize for viewport changes
+    const handleWindowResize = () => {
+      requestAnimationFrame(calculateLayout);
+    };
+    window.addEventListener('resize', handleWindowResize);
+
+    return () => {
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+      window.removeEventListener('resize', handleWindowResize);
+    };
+  }, [cards, cardLayout.cardWidth, cardLayout.cardGap, hasCards, onCapacityChange, cardLayout.mode]);
+
   return (
     <div 
       ref={heroRef}
-      className="w-full overflow-hidden"
-      {...legacyHoverHandlers}
+      className={`topBand flex-shrink-0 ${cards3plus ? 'cards3plus' : ''}`}
       data-testid="hero-section"
-      style={{ minHeight: "280px" }}
+      style={{
+        display: 'grid',
+        gridTemplateColumns: cards3plus 
+          ? 'minmax(240px, 0.9fr) minmax(520px, 2.1fr)' 
+          : 'minmax(320px, 1fr) minmax(360px, 2fr)',
+        gap: '12px',
+        alignItems: 'center', // 垂直居中
+        justifyContent: 'center', // 始终水平居中
+        padding: '16px 0',
+        height: 'min(400px, calc(100vh - 380px))', // 进一步缩小上半区高度，留出更多空间给表格
+        maxWidth: config.layout?.contentMaxWidth || '1200px', // 与表格外框对齐
+        margin: '0 auto', // 水平居中基础
+      }}
     >
+      {/* Hero Area (Left Column) */}
       <div 
-        className="w-full flex items-center justify-center py-12 px-8 relative"
+        className="hero-area flex flex-col items-center text-center py-4 px-6"
+        {...legacyHoverHandlers}
         {...panelHoverHandlers}
-        style={{ minHeight: "280px" }}
       >
         <div 
           className="flex flex-col items-center text-center flex-shrink-0 relative z-10"
           style={{
             ...animationStyle,
-            transform: hasCards && cardsVisible 
-              ? `translateX(-${heroShiftAmount}px)` 
-              : "translateX(0)",
           }}
         >
           <div 
             ref={avatarRef}
-            className="w-40 h-40 rounded-full overflow-hidden mb-6 flex items-center justify-center relative"
+            className="rounded-full overflow-hidden mb-6 flex items-center justify-center relative"
             style={{
+              width: `${avatarConfig.size}px`,
+              height: `${avatarConfig.size}px`,
               background: "rgba(255,255,255,0.22)",
-              border: "2px solid rgba(255,255,255,0.35)",
+              border: `${avatarConfig.borderWidth}px solid ${avatarConfig.borderColor}`,
+              borderRadius: `${avatarConfig.borderRadius}px`,
               boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
             }}
+            {...hotspotHandlers}
           >
             {banner.avatar ? (
               <img src={banner.avatar} alt="头像" className="w-full h-full object-cover" data-testid="img-avatar" />
@@ -542,29 +811,50 @@ export function HeroSection({ config, isMobile }: HeroSectionProps) {
           )}
         </div>
 
-        {hasCards && (shouldRender || isOffMode) && (
+      </div>
+
+      {/* Cards Area (Right Column) */}
+      {hasCards && (shouldRender || isOffMode) && (
+        <div 
+          ref={cardsContainerRef}
+          className="cardColumnWrap flex-shrink-0 relative h-full flex flex-col justify-center" // 垂直居中容器
+          style={{
+            ...animationStyle,
+            opacity: cardsVisible ? 1 : 0,
+            pointerEvents: cardsVisible ? "auto" : "none",
+            height: "100%", // 与头图区域同高
+            width: "100%",
+            overflow: "hidden", // 确保无滚动条
+            padding: "8px 0",
+          }}
+          onMouseEnter={handleCardsEnter}
+        >
           <div 
-            ref={cardsContainerRef}
-            className="flex flex-col gap-4 flex-shrink-0 absolute"
+            className="cardsInner" // 使用CSS多列布局
             style={{
-              ...animationStyle,
-              left: "50%",
-              marginLeft: cardsVisible 
-                ? `${heroCards.gapPx / 2}px` 
-                : `${cardContainerWidth + heroCards.gapPx}px`,
-              opacity: cardsVisible ? 1 : 0,
-              pointerEvents: cardsVisible ? "auto" : "none",
-              minWidth: "280px",
-              maxWidth: "360px",
+              height: "100%",
+              columns: `3 ${cardLayout.cardWidth}`, // 最多3列，每列宽度
+              columnFill: "auto", // 从上到下填充
+              columnGap: `${cardLayout.cardGap}px`, // 列间距
+              gap: `${cardLayout.cardGap}px`, // 同时设置gap确保兼容性
+              padding: "0 4px",
             }}
-            onMouseEnter={handleCardsEnter}
           >
-            {cards.map((card) => (
-              <HoverCard key={card.id} card={card} textColor={textColor} />
+            {cards.map((card, index) => (
+              <div 
+                key={card.id} 
+                ref={el => cardRefs.current[index] = el}
+                style={{ 
+                  marginBottom: "16px",
+                  breakInside: "avoid", // 避免卡片被拆分到不同列
+                }}
+              >
+                <HoverCard card={card} textColor={textColor} config={config} />
+              </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

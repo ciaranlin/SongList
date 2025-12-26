@@ -94,11 +94,17 @@ export default function Home() {
 
         {/* Main Content */}
         <div className="flex flex-col items-center">
-          {/* Hero Section with Reveal Animation */}
-          <HeroSection 
-            config={config}
-            isMobile={isMobile}
-          />
+          {/* Top Row: Hero Section + Cards Grid Layout */}
+          <div 
+            className={`topRow w-full px-4 transition-all duration-300`}
+            style={{ maxWidth: config.layout.contentMaxWidth }}
+          >
+            {/* Hero Section with Reveal Animation */}
+            <HeroSection 
+              config={config}
+              isMobile={isMobile}
+            />
+          </div>
 
           {/* Filter Bar */}
           <FilterBar 

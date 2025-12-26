@@ -29,7 +29,7 @@ import {
   Square, Plus, Trash2, GripVertical, ExternalLink, Settings, Upload, Image, Copy, MessageSquare,
   Heart, Mail, Phone, MapPin, Link2, Share2, Code, Github, Linkedin, Facebook, Instagram, Share, DollarSign
 } from "lucide-react";
-import { SiBilibili, SiTwitter, SiYoutube } from "react-icons/si";
+import { SiBilibili, SiYoutube } from "react-icons/si";
 
 const ICON_OPTIONS = [
   { value: "globe", label: "全球", Icon: undefined },
@@ -51,6 +51,8 @@ export default function ConfigPage() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [previewConfig, setPreviewConfig] = useState<SiteConfig>(defaultConfig);
   const [isMobileView, setIsMobileView] = useState(false);
+  const [isCardCapacityFull, setIsCardCapacityFull] = useState(false);
+  const [maxCardCount, setMaxCardCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cardImageInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -61,6 +63,24 @@ export default function ConfigPage() {
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  const handleCapacityChange = useCallback((isFull: boolean, maxCards: number) => {
+    setIsCardCapacityFull(isFull);
+    setMaxCardCount(maxCards);
+    
+    // If capacity is full and there are more cards than max, automatically trim the cards
+    if (isFull && previewConfig.cards.length > maxCards) {
+      setPreviewConfig(prev => ({
+        ...prev,
+        cards: prev.cards.slice(0, maxCards)
+      }));
+      toast({
+        title: "卡片数量已调整",
+        description: `由于空间限制，卡片数量已自动调整为 ${maxCards} 个`,
+        variant: "default"
+      });
+    }
+  }, [previewConfig.cards.length, setPreviewConfig, toast]);
 
   const { data: savedConfig = defaultConfig, isLoading } = useQuery<SiteConfig>({
     queryKey: ["/api/config"],
@@ -243,6 +263,9 @@ export default function ConfigPage() {
   const heroHotspot = previewConfig.heroHotspot ?? { enabled: true, target: "avatar", sizePx: 80, showHint: true, hintText: "移入展开", debounceMs: 120 };
   const copyConfig = previewConfig.copyConfig ?? { enabled: true, template: "点歌 {songName}", toastEnabled: true };
   const filterHint = previewConfig.filterHint ?? { enabled: true, text: "挑个想听的类别呗~", align: "left", fontSize: 14, colorMode: "auto", manualColor: "#333333" };
+  const cardLayout = previewConfig.cardLayout ?? { mode: "columns", areaHeight: "100%", columnCount: 3, cardWidth: "260px", cardGap: 12, mobileColumnCount: 1 };
+  const cardImageConfig = previewConfig.cardImageConfig ?? { fit: "cover", posX: 50, posY: 50, scale: 1, boxWidth: "100%", boxHeight: "128px", borderRadius: "8px", padding: "0px", backgroundColor: "transparent" };
+  const avatarConfig = previewConfig.avatarConfig ?? { size: 120, borderWidth: 2, borderColor: "#ffffff", borderRadius: "50%" };
 
   const EditorContent = (
     <div className="p-4">
@@ -457,11 +480,24 @@ export default function ConfigPage() {
         {/* Cards Tab */}
         <TabsContent value="cards" className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium">卡片 ({previewConfig.cards.length})</h3>
-            <Button variant="secondary" size="sm" onClick={addCard} className="rounded-lg gap-1" data-testid="button-add-card">
-              <Plus className="w-3 h-3" />添加卡片
-            </Button>
-          </div>
+              <h3 className="text-sm font-medium">卡片 ({previewConfig.cards.length})</h3>
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={addCard} 
+                className="rounded-lg gap-1" 
+                data-testid="button-add-card"
+                disabled={isCardCapacityFull}
+                title={isCardCapacityFull ? "空间不足，无法添加更多卡片" : "添加新卡片"}
+              >
+                <Plus className="w-3 h-3" />添加卡片
+              </Button>
+              {isCardCapacityFull && (
+                <div className="text-xs text-warning ml-2">
+                  空间不足，最多可容纳 {maxCardCount} 个卡片
+                </div>
+              )}
+            </div>
 
           {previewConfig.cards.map((card, index) => (
             <UICard key={card.id}>
@@ -643,6 +679,136 @@ export default function ConfigPage() {
               </div>
             </CardContent>
           </UICard>
+
+          <UICard>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">卡片布局</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label className="text-sm mb-2 block">布局模式</Label>
+                <Select value={cardLayout.mode} onValueChange={(value) => updatePreview("cardLayout", { mode: value as "columns" | "grid" })}>
+                  <SelectTrigger className="rounded-lg">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="columns">流式分栏</SelectItem>
+                    <SelectItem value="grid">宫格布局</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-sm mb-2 block">卡片区域高度</Label>
+                <Input type="text" value={cardLayout.areaHeight} onChange={(e) => updatePreview("cardLayout", { areaHeight: e.target.value })} className="rounded-lg" placeholder="42vh 或 500px" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-sm mb-2 block">列数</Label>
+                  <Input type="number" min="1" max="4" value={cardLayout.columnCount} onChange={(e) => updatePreview("cardLayout", { columnCount: parseInt(e.target.value) || 1 })} className="rounded-lg" />
+                </div>
+                <div>
+                  <Label className="text-sm mb-2 block">移动端列数</Label>
+                  <Input type="number" min="1" max="2" value={cardLayout.mobileColumnCount} onChange={(e) => updatePreview("cardLayout", { mobileColumnCount: parseInt(e.target.value) || 1 })} className="rounded-lg" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-sm mb-2 block">卡片宽度</Label>
+                  <Input type="text" value={cardLayout.cardWidth} onChange={(e) => updatePreview("cardLayout", { cardWidth: e.target.value })} className="rounded-lg" placeholder="280px" />
+                </div>
+                <div>
+                  <Label className="text-sm mb-2 block">卡片间距</Label>
+                  <Input type="number" min="0" max="40" value={cardLayout.cardGap} onChange={(e) => updatePreview("cardLayout", { cardGap: parseInt(e.target.value) || 12 })} className="rounded-lg" />
+                </div>
+              </div>
+            </CardContent>
+          </UICard>
+
+          <UICard>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">卡片图片配置</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label className="text-sm mb-2 block">图片显示模式</Label>
+                <Select value={cardImageConfig.fit} onValueChange={(value) => updatePreview("cardImageConfig", { fit: value as "contain" | "cover" })}>
+                  <SelectTrigger className="rounded-lg">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="contain">Contain</SelectItem>
+                    <SelectItem value="cover">Cover</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-sm mb-2 block">图片X位置</Label>
+                  <Input type="number" min="0" max="100" value={cardImageConfig.posX} onChange={(e) => updatePreview("cardImageConfig", { posX: parseInt(e.target.value) || 50 })} className="rounded-lg" placeholder="50%" />
+                </div>
+                <div>
+                  <Label className="text-sm mb-2 block">图片Y位置</Label>
+                  <Input type="number" min="0" max="100" value={cardImageConfig.posY} onChange={(e) => updatePreview("cardImageConfig", { posY: parseInt(e.target.value) || 50 })} className="rounded-lg" placeholder="50%" />
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm mb-2 block">图片缩放比例</Label>
+                <Input type="number" min="0.5" max="2" step="0.1" value={cardImageConfig.scale} onChange={(e) => updatePreview("cardImageConfig", { scale: parseFloat(e.target.value) || 1 })} className="rounded-lg" placeholder="1" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-sm mb-2 block">容器宽度</Label>
+                  <Input type="text" value={cardImageConfig.boxWidth} onChange={(e) => updatePreview("cardImageConfig", { boxWidth: e.target.value })} className="rounded-lg" placeholder="100%" />
+                </div>
+                <div>
+                  <Label className="text-sm mb-2 block">容器高度</Label>
+                  <Input type="text" value={cardImageConfig.boxHeight} onChange={(e) => updatePreview("cardImageConfig", { boxHeight: e.target.value })} className="rounded-lg" placeholder="128px" />
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm mb-2 block">圆角</Label>
+                <Input type="text" value={cardImageConfig.borderRadius} onChange={(e) => updatePreview("cardImageConfig", { borderRadius: e.target.value })} className="rounded-lg" placeholder="8px" />
+              </div>
+              <div>
+                <Label className="text-sm mb-2 block">内边距</Label>
+                <Input type="text" value={cardImageConfig.padding} onChange={(e) => updatePreview("cardImageConfig", { padding: e.target.value })} className="rounded-lg" placeholder="0px" />
+              </div>
+              <div>
+                <Label className="text-sm mb-2 block">背景颜色</Label>
+                <div className="flex items-center gap-3">
+                  <Input type="color" value={cardImageConfig.backgroundColor} onChange={(e) => updatePreview("cardImageConfig", { backgroundColor: e.target.value })} className="w-12 h-10 p-1 rounded-lg cursor-pointer" />
+                  <Input type="text" value={cardImageConfig.backgroundColor} onChange={(e) => updatePreview("cardImageConfig", { backgroundColor: e.target.value })} className="flex-1 rounded-lg" />
+                </div>
+              </div>
+            </CardContent>
+          </UICard>
+
+          <UICard>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">头像配置</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label className="text-sm mb-2 block">头像尺寸</Label>
+                <Input type="number" min="60" max="200" value={avatarConfig.size} onChange={(e) => updatePreview("avatarConfig", { size: parseInt(e.target.value) || 120 })} className="rounded-lg" placeholder="120" />
+              </div>
+              <div>
+                <Label className="text-sm mb-2 block">边框宽度</Label>
+                <Input type="number" min="0" max="20" value={parseInt(avatarConfig.borderWidth) || 2} onChange={(e) => updatePreview("avatarConfig", { borderWidth: `${parseInt(e.target.value) || 2}px` })} className="rounded-lg" placeholder="2" />
+              </div>
+              <div>
+                <Label className="text-sm mb-2 block">边框颜色</Label>
+                <div className="flex items-center gap-3">
+                  <Input type="color" value={avatarConfig.borderColor} onChange={(e) => updatePreview("avatarConfig", { borderColor: e.target.value })} className="w-12 h-10 p-1 rounded-lg cursor-pointer" />
+                  <Input type="text" value={avatarConfig.borderColor} onChange={(e) => updatePreview("avatarConfig", { borderColor: e.target.value })} className="flex-1 rounded-lg" />
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm mb-2 block">边框圆角</Label>
+                <Input type="text" value={avatarConfig.borderRadius} onChange={(e) => updatePreview("avatarConfig", { borderRadius: e.target.value })} className="rounded-lg" placeholder="50%" />
+              </div>
+            </CardContent>
+          </UICard>
         </TabsContent>
       </Tabs>
     </div>
@@ -706,7 +872,7 @@ export default function ConfigPage() {
             <div className="w-full p-2 text-center text-xs text-muted-foreground bg-black/5">
               实时预览
             </div>
-            <HeroSection config={previewConfig} isMobile={false} />
+            <HeroSection config={previewConfig} isMobile={false} onCapacityChange={handleCapacityChange} />
             <FilterBar config={previewConfig} songs={songs} onFilteredSongsChange={() => {}} />
             <div className="w-full px-4 pb-8 flex justify-center" style={{ maxWidth: previewConfig.layout.contentMaxWidth }}>
               <SongTable config={previewConfig} songs={songs.slice(0, 5)} />
