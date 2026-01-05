@@ -42,25 +42,6 @@ export const cardSchema = z.object({
   body: z.string().optional(),
   image: z.string().optional(), // Card image URL
   links: z.array(linkItemSchema).default([]),
-<<<<<<< HEAD
-  styles: z
-    .object({
-      padding: z.string().default("16px"),
-      borderRadius: z.string().default("16px"),
-      background: z.string().default("rgba(255,255,255,0.22)"),
-      border: z.string().default("1px solid rgba(255,255,255,0.35)"),
-      shadow: z.string().default("0 4px 16px rgba(0,0,0,0.08)"),
-    })
-    .default({}),
-  typography: z
-    .object({
-      titleSize: z.string().default("16px"),
-      titleWeight: z.string().default("600"),
-      bodySize: z.string().default("14px"),
-      lineHeight: z.string().default("1.5"),
-    })
-    .default({}),
-=======
   x: z.number().default(0),
   y: z.number().default(0),
   width: z.number().default(280),
@@ -80,7 +61,6 @@ export const cardSchema = z.object({
     bodySize: z.string().default("14px"),
     lineHeight: z.string().default("1.5"),
   }).default({}),
->>>>>>> 4c14f13 (banner)
 });
 
 export type Card = z.infer<typeof cardSchema>;
@@ -228,19 +208,6 @@ export const siteConfigSchema = z.object({
       hintSize: z.string().default("13px"),
     }).default({}),
   }).default({}),
-<<<<<<< HEAD
-  avatarConfig: avatarConfigSchema,
-  cardLayout: cardLayoutSchema,
-  cardImageConfig: cardImageConfigSchema,
-  hoverBehavior: z
-    .object({
-      enabled: z.boolean().default(true),
-      showOnHeroHover: z.boolean().default(true),
-      fadeInDuration: z.number().default(250),
-      fadeOutDuration: z.number().default(200),
-    })
-    .default({}),
-=======
   headerImage: z.object({
     x: z.number().default(0),
     y: z.number().default(0),
@@ -255,7 +222,6 @@ export const siteConfigSchema = z.object({
     fadeInDuration: z.number().default(250),
     fadeOutDuration: z.number().default(200),
   }).default({}),
->>>>>>> 4c14f13 (banner)
   cardAnimation: cardAnimationSchema,
   heroCards: heroCardsSchema,
   heroHotspot: heroHotspotSchema,
@@ -279,7 +245,7 @@ export const siteConfigSchema = z.object({
       spacing: z.string().default("12px"),
     })
     .default({}),
-  adminPassword: z.string().default("vtuber123"),
+  adminPassword: z.string().default("qwe123"),
 });
 
 export type SiteConfig = z.infer<typeof siteConfigSchema>;
@@ -305,32 +271,6 @@ export const defaultConfig: SiteConfig = {
       hintSize: "13px",
     },
   },
-<<<<<<< HEAD
-  avatarConfig: {
-    size: 160,
-    borderWidth: "2px",
-    borderColor: "rgba(255,255,255,0.35)",
-    borderRadius: "50%",
-  },
-  cardLayout: {
-    mode: "columns",
-    areaHeight: "42vh",
-    columnCount: 2,
-    cardWidth: "280px",
-    cardGap: 12,
-    mobileColumnCount: 1,
-  },
-  cardImageConfig: {
-    fit: "cover",
-    posX: 50,
-    posY: 50,
-    scale: 1,
-    boxWidth: "100%",
-    boxHeight: "128px",
-    borderRadius: "8px",
-    padding: "0px",
-    backgroundColor: "transparent",
-=======
   headerImage: {
     x: 0,
     y: 0,
@@ -338,7 +278,6 @@ export const defaultConfig: SiteConfig = {
     height: 360,
     src: "",
     zIndex: 1,
->>>>>>> 4c14f13 (banner)
   },
   hoverBehavior: {
     enabled: true,
@@ -493,7 +432,7 @@ export const defaultConfig: SiteConfig = {
     searchInputWidth: "220px",
     spacing: "12px",
   },
-  adminPassword: "vtuber123",
+  adminPassword: "qwe123",
 };
 
 // Default songs
