@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { type SiteConfig, type Card as CardType, cardImageConfigSchema } from "@shared/schema";
+import { useState, useEffect, useRef, useCallback, type CSSProperties } from "react";
+import { Rnd } from "react-rnd";
+import { type SiteConfig, type Card as CardType } from "@shared/schema";
 import { getAutoTextColor } from "@/lib/config-context";
 import { Music, ExternalLink, Twitter, Youtube, Globe, ChevronDown, ChevronUp } from "lucide-react";
 import { SiBilibili } from "react-icons/si";
@@ -8,7 +9,9 @@ import { Button } from "@/components/ui/button";
 interface HeroSectionProps {
   config: SiteConfig;
   isMobile: boolean;
-  onCapacityChange?: (isFull: boolean, maxCards: number) => void;
+  onCardDragEnd?: (cardId: string, position: { x: number; y: number }, size: { width: number; height: number }) => void;
+  onHeaderDragEnd?: (position: { x: number; y: number }, size: { width: number; height: number }) => void;
+  canDrag?: boolean; // 是否允许拖动浮层，默认false
 }
 
 function getIconComponent(iconName?: string) {
@@ -68,49 +71,29 @@ function CardLinkItem({ link, textColor }: { link: CardType["links"][0]; textCol
   );
 }
 
-function HoverCard({ card, textColor, config }: { card: CardType; textColor: string; config: SiteConfig }) {
-  const imageConfig = config.cardImageConfig ?? cardImageConfigSchema.parse({});
-  
+function HoverCard({ card, textColor, isDragging }: { card: CardType; textColor: string; isDragging?: boolean }) {
   return (
     <div
-      className="flex flex-col gap-3 break-inside-avoid-column"
+      className="flex flex-col gap-3"
       style={{
         padding: card.styles.padding,
         borderRadius: card.styles.borderRadius,
         background: card.styles.background,
         border: card.styles.border,
         boxShadow: card.styles.shadow,
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
+        // 拖拽过程中禁用模糊效果，提高性能
+        backdropFilter: isDragging ? "none" : "blur(12px)",
+        WebkitBackdropFilter: isDragging ? "none" : "blur(12px)",
       }}
       data-testid={`card-${card.id}`}
     >
       {card.image && (
-        <div 
-          style={{
-            width: imageConfig.boxWidth,
-            height: imageConfig.boxHeight,
-            padding: imageConfig.padding,
-            backgroundColor: imageConfig.backgroundColor,
-            borderRadius: imageConfig.borderRadius,
-            overflow: "hidden",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <img 
-            src={card.image} 
-            alt={card.title} 
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: imageConfig.fit,
-              objectPosition: `${imageConfig.posX}% ${imageConfig.posY}%`,
-              transform: `scale(${imageConfig.scale})`,
-            }}
-          />
-        </div>
+        <img 
+          src={card.image} 
+          alt={card.title} 
+          className="w-full h-32 rounded-lg object-cover"
+          style={{ borderRadius: "8px" }}
+        />
       )}
 
       <h3
@@ -148,184 +131,110 @@ function HoverCard({ card, textColor, config }: { card: CardType; textColor: str
   );
 }
 
-export function HeroSection({ config, isMobile, onCapacityChange }: HeroSectionProps) {
-  const banner = config.banner ?? {
-    avatar: "",
-    title: "歌单列表",
-    subtitle: "欢迎来到我的歌单",
-    hint: "移入查看更多",
-    styles: {
-      titleSize: "44px",
-      titleWeight: "700",
-      subtitleSize: "28px",
-      subtitleWeight: "500",
-      hintSize: "13px",
-    },
-  };
-  const theme = config.theme ?? {
-    background: "#A9BAC4",
-    textColorMode: "auto" as const,
-    manualTextColor: "#1B1B1B",
-  };
-  const cards = config.cards ?? [];
-  const cardLayout = config.cardLayout ?? {
-    mode: "columns" as const,
-    areaHeight: "600px",
-    columnCount: 1,
-    cardWidth: "300px", // 调整卡片宽度，确保三列时充满卡片区域
-    cardGap: 12, // 保持合理间距
-    mobileColumnCount: 1
-  };
-  const avatarConfig = config.avatarConfig ?? {
-    size: 160,
-    borderWidth: "2px",
-    borderColor: "rgba(255,255,255,0.35)",
-    borderRadius: "50%"
-  };
-  const heroRef = useRef<HTMLDivElement>(null);
-  const avatarRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
-  const cardsContainerRef = useRef<HTMLDivElement>(null);
-  
-  const [expanded, setExpanded] = useState(false);
-  const [shouldRender, setShouldRender] = useState(false);
+// 简化动画效果，只保留淡入淡出
+function getSimpleFadeStyle(visible: boolean, isDragging: boolean, isHeader: boolean = false) {
+  // 拖拽过程中禁用过渡效果，提高性能
+  // 头图淡出时间较短（200ms），卡片淡入时间正常（400ms）
+  const duration = isHeader ? "200ms" : "400ms";
+  return {
+    transitionProperty: isDragging ? "none" : "opacity",
+    transitionDuration: isDragging ? "0ms" : duration,
+    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
+    opacity: visible ? 1 : 0,
+    transform: "none", // 移除所有transform效果，只保留淡入淡出
+  } as CSSProperties;
+}
+
+export function HeroSection({ config, isMobile, onCardDragEnd, onHeaderDragEnd, canDrag = false }: HeroSectionProps) {
+  const { banner, theme, cards, headerImage, displayMode: incomingMode } = config;
+  const boundsRef = useRef<HTMLDivElement>(null);
+
+  const contentMaxWidth = config.layout?.contentMaxWidth || "1200px";
+  const displayMode = isMobile ? "always" : (incomingMode ?? "always");
+  const isHoverMode = displayMode === "hoverReveal";
+  const [expanded, setExpanded] = useState(displayMode === "always");
   const [mobileExpanded, setMobileExpanded] = useState(false);
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [shouldRender, setShouldRender] = useState(displayMode === "always");
+  const [isDragging, setIsDragging] = useState(false); // 跟踪是否正在拖拽
 
-  const heroCards = config.heroCards ?? {
-    mode: "scrollReveal" as const,
-    heroShiftPx: 0,
-    gapPx: 32,
-    animationDurationMs: 400,
-    animationEasing: "cubic-bezier(0.4, 0, 0.2, 1)",
-  };
+  // 拖拽开始时禁用过渡效果
+  const handleDragStart = useCallback(() => {
+    setIsDragging(true);
+  }, []);
 
-  const heroHotspot = config.heroHotspot ?? {
-    enabled: true,
-    target: "avatar" as const,
-    sizePx: 80,
-    showHint: true,
-    hintText: "移入展开",
-    debounceMs: 120,
-  };
+  // 拖拽结束后恢复过渡效果
+  const handleDragEnd = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  // 添加全局鼠标释放事件监听，确保拖拽状态能正确结束
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isDragging) {
+        setIsDragging(false);
+      }
+    };
+
+    const handleGlobalTouchEnd = () => {
+      if (isDragging) {
+        setIsDragging(false);
+      }
+    };
+
+    // 添加全局事件监听器作为安全措施
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+    document.addEventListener('touchend', handleGlobalTouchEnd);
+
+    return () => {
+      // 移除全局事件监听器
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+      document.removeEventListener('touchend', handleGlobalTouchEnd);
+    };
+  }, [isDragging]);
+
+  useEffect(() => {
+    if (displayMode === "always") {
+      setExpanded(true);
+      setShouldRender(true);
+    }
+  }, [displayMode]);
 
   const textColor = theme.textColorMode === "auto" 
     ? getAutoTextColor(theme.background) 
     : theme.manualTextColor;
 
-  const isOffMode = heroCards.mode === "off";
-  const isHoverMode = heroCards.mode === "hoverReveal";
-  const isScrollMode = heroCards.mode === "scrollReveal";
-  const hasCards = cards.length > 0;
+  // 可见性逻辑：
+  // - always模式：头图和卡片都始终显示
+  // - hoverReveal模式：非悬停时显示头图，悬停时头图淡出隐藏，卡片显示
+  const cardsVisible = displayMode === "always" ? true : expanded;
+  const headerVisible = displayMode === "always" ? true : !expanded; // 悬停触发模式下，悬停时头图淡出隐藏
 
-  useEffect(() => {
-    if (isOffMode) {
-      setExpanded(true);
-      setShouldRender(true);
-    }
-  }, [isOffMode]);
+  // banner区域固定高度，设置为固定值，确保筛选区不会向上移动
+  const bannerHeight = 450; // 固定高度，确保头图和卡片都有足够空间
 
-  useEffect(() => {
-    if (isScrollMode && !isMobile) {
-      const observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            setShouldRender(true);
-            requestAnimationFrame(() => setExpanded(true));
-          } else {
-            setExpanded(false);
-          }
-        },
-        { threshold: 0.5, rootMargin: "0px" }
-      );
-
-      if (heroRef.current) {
-        observer.observe(heroRef.current);
-      }
-
-      return () => observer.disconnect();
-    }
-  }, [isScrollMode, isMobile]);
-
-  useEffect(() => {
-    if (!expanded && shouldRender && !isOffMode) {
-      const timer = setTimeout(() => {
-        setShouldRender(false);
-      }, heroCards.animationDurationMs + 50);
-      return () => clearTimeout(timer);
-    }
-  }, [expanded, shouldRender, heroCards.animationDurationMs, isOffMode]);
-
-  const handleHotspotEnter = useCallback(() => {
-    if (!isHoverMode || isMobile) return;
-    
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = null;
-    }
-    
+  const handleHeaderEnter = useCallback(() => {
+    if (!isHoverMode) return;
     setShouldRender(true);
     requestAnimationFrame(() => setExpanded(true));
-  }, [isHoverMode, isMobile]);
+  }, [isHoverMode]);
 
-  const handleHotspotLeave = useCallback(() => {
-    if (!isHoverMode || isMobile) return;
-    
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-    
-    debounceTimerRef.current = setTimeout(() => {
-      setExpanded(false);
-      debounceTimerRef.current = null;
-    }, heroHotspot.debounceMs);
-  }, [isHoverMode, isMobile, heroHotspot.debounceMs]);
+  const handleHeaderLeave = useCallback(() => {
+    if (!isHoverMode) return;
+    setExpanded(false);
+    // 不要隐藏整个组件，只通过透明度控制可见性
+    // 这样可以确保悬停检测始终有效，不会出现都不显示的情况
+  }, [isHoverMode]);
 
-  const handleCardsEnter = useCallback(() => {
-    if (!isHoverMode || isMobile) return;
-    
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = null;
-    }
-  }, [isHoverMode, isMobile]);
-
-  const handleCardsLeave = useCallback(() => {
-    // Intentionally no-op: closing is handled by leaving the whole panel area.
-  }, []);
-
+  // 修复shouldRender逻辑，确保在hoverReveal模式下组件始终渲染
   useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-    };
-  }, []);
-
-  // Calculate hero shift amount based on card width and gap
-  const cardContainerWidth = cardLayout.cardWidth.includes("%") 
-    ? 320 // default for percentage width
-    : parseInt(cardLayout.cardWidth) || 320;
-  const autoShift = hasCards ? (cardContainerWidth / 2) + (heroCards.gapPx / 2) : 0;
-  const heroShiftAmount = heroCards.heroShiftPx > 0 ? heroCards.heroShiftPx : autoShift;
-
-  const animationStyle = {
-    transitionProperty: "transform, opacity, margin-left",
-    transitionDuration: `${heroCards.animationDurationMs}ms`,
-    transitionTimingFunction: heroCards.animationEasing,
-  };
-
-  const cardsVisible = isOffMode || expanded;
-
-
+    if (displayMode === "hoverReveal") {
+      setShouldRender(true); // 悬停模式下始终渲染，只通过透明度控制可见性
+    }
+  }, [displayMode]);
 
   if (isMobile) {
     return (
-      <div 
-        ref={heroRef}
-        className="w-full"
-        data-testid="hero-section"
-      >
+      <div className="w-full" data-testid="hero-section">
         <div className="py-8 px-4 flex flex-col items-center text-center">
           <div 
             className="w-20 h-20 rounded-full overflow-hidden mb-4 flex items-center justify-center flex-shrink-0"
@@ -367,25 +276,9 @@ export function HeroSection({ config, isMobile, onCapacityChange }: HeroSectionP
           >
             {banner.subtitle}
           </p>
-
-          {/* small hover hint under subtitle */}
-          {isHoverMode && heroHotspot.enabled && hasCards && (
-            <p
-              style={{
-                color: textColor,
-                fontSize: "11px",
-                opacity: 0.6,
-                marginTop: "-8px",
-                marginBottom: "12px",
-              }}
-            >
-              {heroHotspot.hintText || "移入显示更多"}
-            </p>
-          )}
-
         </div>
 
-        {hasCards && !isOffMode && (
+        {cards.length > 0 && (
           <div className="px-4 pb-4">
             <Button
               variant="secondary"
@@ -412,24 +305,14 @@ export function HeroSection({ config, isMobile, onCapacityChange }: HeroSectionP
               style={{
                 maxHeight: mobileExpanded ? `${cards.length * 250}px` : "0px",
                 opacity: mobileExpanded ? 1 : 0,
-                ...animationStyle,
+                transition: `all 400ms cubic-bezier(0.4, 0, 0.2, 1)`,
               }}
             >
               <div className="flex flex-col gap-4 mt-4">
                 {cards.map((card) => (
-                  <HoverCard key={card.id} card={card} textColor={textColor} config={config} />
+                  <HoverCard key={card.id} card={card} textColor={textColor} />
                 ))}
               </div>
-            </div>
-          </div>
-        )}
-
-        {hasCards && isOffMode && (
-          <div className="px-4 pb-4">
-            <div className="flex flex-col gap-4">
-              {cards.map((card) => (
-                <HoverCard key={card.id} card={card} textColor={textColor} config={config} />
-              ))}
             </div>
           </div>
         )}
@@ -437,424 +320,229 @@ export function HeroSection({ config, isMobile, onCapacityChange }: HeroSectionP
     );
   }
 
-  // Fix hover hotspot to only trigger on visible area of avatar
-  const handleAvatarHover = useCallback((event: React.MouseEvent) => {
-    if (!isHoverMode || isMobile) return;
-    
-    // Only trigger if hover is actually on the avatar image, not on empty space
-    const target = event.target as HTMLElement;
-    if (target.tagName === 'IMG' || target === avatarRef.current) {
-      handleHotspotEnter();
-    }
-  }, [isHoverMode, isMobile, handleHotspotEnter]);
-
-  const hotspotHandlers = heroHotspot.enabled && isHoverMode
-    ? { onMouseEnter: handleAvatarHover }
-    : {};
-
-  const legacyHoverHandlers = !heroHotspot.enabled && isHoverMode
-    ? { onMouseEnter: handleHotspotEnter, onMouseLeave: handleHotspotLeave }
-    : {};
-
-  // When using a small hotspot to open, keep the panel open while the mouse stays within
-  // the whole hero+cards area (including the gap), and only close when leaving this area.
-  const handlePanelEnter = useCallback(() => {
-    if (!isHoverMode || isMobile) return;
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = null;
-    }
-  }, [isHoverMode, isMobile]);
-
-  const handlePanelLeave = useCallback(() => {
-    if (!isHoverMode || isMobile) return;
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-    debounceTimerRef.current = setTimeout(() => {
-      setExpanded(false);
-      debounceTimerRef.current = null;
-    }, heroHotspot.debounceMs);
-  }, [isHoverMode, isMobile, heroHotspot.debounceMs]);
-
-  const panelHoverHandlers = heroHotspot.enabled && isHoverMode
-    ? { onMouseEnter: handlePanelEnter, onMouseLeave: handlePanelLeave }
-    : {};
-
-
-  // Calculate the number of card columns
-  const [cardColumns, setCardColumns] = useState(1);
-  const [cards3plus, setCards3plus] = useState(false);
-  const [maxCards, setMaxCards] = useState(0);
-  const [isCapacityFull, setIsCapacityFull] = useState(false);
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  // Update cardRefs array when cards change
-  useEffect(() => {
-    cardRefs.current = cardRefs.current.slice(0, cards.length);
-  }, [cards.length]);
-
-  // Calculate columns and capacity using ResizeObserver for accurate DOM measurements
-  useEffect(() => {
-    if (!cardsContainerRef.current || !hasCards) return;
-
-    const container = cardsContainerRef.current;
-    let resizeObserver: ResizeObserver | null = null;
-
-    // Combined function to calculate both columns and capacity
-    const calculateLayout = () => {
-      // Get cardsInner element
-      const cardsInner = container.querySelector('.cardsInner');
-      if (!cardsInner) return;
-
-      // Get actual DOM dimensions using getBoundingClientRect for more accurate measurements
-      const cardsInnerRect = cardsInner.getBoundingClientRect();
-      const containerRect = container.getBoundingClientRect();
-      
-      const cardsInnerWidth = cardsInnerRect.width;
-      const containerHeight = containerRect.height;
-      
-      const cardWidth = parseInt(cardLayout.cardWidth) || 260;
-      const columnGap = cardLayout.cardGap || 12;
-      
-      // Calculate number of columns based on actual width, but cap at 3
-      const columnWidthWithGap = cardWidth + columnGap;
-      const numColumns = Math.min(3, Math.max(1, Math.floor((cardsInnerWidth + columnGap) / columnWidthWithGap)));
-      
-      setCardColumns(numColumns);
-      setCards3plus(numColumns > 2);
-
-      // Evaluate capacity based on actual CSS Multi-Column layout and real DOM measurements
-      const evaluateCapacity = () => {
-        // Get all card elements
-        const cardElements = Array.from(cardsInner.querySelectorAll('[data-testid^="card-"]'));
-        if (cardElements.length === 0) return;
-
-        // Get the actual margin bottom from the first card
-        const firstCardStyle = window.getComputedStyle(cardElements[0].parentElement || cardElements[0]);
-        const cardMarginBottom = parseFloat(firstCardStyle.marginBottom) || 0;
-        
-        // Calculate available height in each column
-        const availableHeight = containerHeight;
-        
-        // Track the position of each card to determine column placement
-        const cardPositions: { top: number; bottom: number; column: number }[] = [];
-        
-        // Get the actual position of each card in the DOM
-        cardElements.forEach((cardEl, index) => {
-          const cardRect = cardEl.getBoundingClientRect();
-          const cardsInnerRect = cardsInner.getBoundingClientRect();
-          
-          // Calculate relative position within cardsInner
-          const top = cardRect.top - cardsInnerRect.top;
-          const bottom = cardRect.bottom - cardsInnerRect.top;
-          
-          // Determine which column the card is in
-          let column = 0;
-          if (index > 0) {
-            // Find the previous card that is in a different column (more than cardWidth to the left)
-            for (let i = index - 1; i >= 0; i--) {
-              const prevCardEl = cardElements[i];
-              const prevCardRect = prevCardEl.getBoundingClientRect();
-              
-              if (Math.abs(prevCardRect.left - cardRect.left) > cardWidth / 2) {
-                // This is likely the first card in a new column
-                column = cardPositions[i].column + 1;
-                break;
-              }
-            }
-          }
-          
-          cardPositions.push({ top, bottom, column });
-        });
-        
-        // Group cards by column
-        const columns: { cards: typeof cardPositions[]; maxBottom: number }[] = [];
-        cardPositions.forEach(pos => {
-          if (!columns[pos.column]) {
-            columns[pos.column] = { cards: [], maxBottom: 0 };
-          }
-          columns[pos.column].cards.push(pos);
-          columns[pos.column].maxBottom = Math.max(columns[pos.column].maxBottom, pos.bottom + cardMarginBottom);
-        });
-        
-        // Calculate maximum cards by checking if all current cards fit within the container
-        let maxCapacity = cards.length;
-        let isFull = false;
-        
-        // Check if any column exceeds the container height
-        const anyColumnExceeds = columns.some(col => col.maxBottom > availableHeight);
-        
-        if (anyColumnExceeds) {
-          // If any column exceeds, we need to reduce capacity
-          // Find the first card that causes overflow
-          for (let i = cardPositions.length - 1; i >= 0; i--) {
-            const pos = cardPositions[i];
-            const column = columns[pos.column];
-            
-            // Remove this card and see if column fits
-            const newColumnCards = column.cards.filter(c => c !== pos);
-            const newColumnMaxBottom = newColumnCards.length > 0 
-              ? Math.max(...newColumnCards.map(c => c.bottom + cardMarginBottom)) 
-              : 0;
-            
-            if (newColumnMaxBottom <= availableHeight) {
-              // This is the first card that causes overflow
-              maxCapacity = i;
-              break;
-            }
-          }
-          
-          isFull = true;
-        } else {
-          // Check if we can fit one more card
-          const firstCardHeight = cardElements[0].getBoundingClientRect().height + cardMarginBottom;
-          const shortestColumn = columns.reduce((prev, curr) => 
-            prev.maxBottom < curr.maxBottom ? prev : curr
-          );
-          
-          if (shortestColumn.maxBottom + firstCardHeight > availableHeight) {
-            // Cannot fit another card
-            isFull = true;
-          }
-        }
-        
-        // Ensure maxCapacity is at least 0
-        maxCapacity = Math.max(0, maxCapacity);
-        
-        setMaxCards(maxCapacity);
-        setIsCapacityFull(isFull);
-        
-        // Notify parent component about capacity change
-        if (onCapacityChange) {
-          onCapacityChange(isFull, maxCapacity);
-        }
-      };
-
-      evaluateCapacity();
-    };
-
-    // Initial calculation
-    calculateLayout();
-
-    // Use ResizeObserver to monitor real DOM size changes
-    resizeObserver = new ResizeObserver(() => {
-      requestAnimationFrame(calculateLayout);
-    });
-
-    // Observe multiple elements that can affect the layout
-    const elementsToObserve: HTMLElement[] = [container];
-    const cardsInner = container.querySelector('.cardsInner');
-    if (cardsInner) elementsToObserve.push(cardsInner as HTMLElement);
-    
-    // Also observe all card elements for changes in content size
-    const cardElements = container.querySelectorAll('[data-testid^="card-"]');
-    cardElements.forEach(cardEl => elementsToObserve.push(cardEl as HTMLElement));
-    
-    // Observe all elements
-    elementsToObserve.forEach(el => resizeObserver!.observe(el));
-
-    // Also observe window resize for viewport changes
-    const handleWindowResize = () => {
-      requestAnimationFrame(calculateLayout);
-    };
-    window.addEventListener('resize', handleWindowResize);
-
-    return () => {
-      if (resizeObserver) {
-        resizeObserver.disconnect();
-      }
-      window.removeEventListener('resize', handleWindowResize);
-    };
-  }, [cards, cardLayout.cardWidth, cardLayout.cardGap, hasCards, onCapacityChange, cardLayout.mode]);
-
   return (
-    <div 
-      ref={heroRef}
-      className={`topBand flex-shrink-0 ${cards3plus ? 'cards3plus' : ''}`}
-      data-testid="hero-section"
-      style={{
-        display: 'grid',
-        gridTemplateColumns: cards3plus 
-          ? 'minmax(240px, 0.9fr) minmax(520px, 2.1fr)' 
-          : 'minmax(320px, 1fr) minmax(360px, 2fr)',
-        gap: '12px',
-        alignItems: 'center', // 垂直居中
-        justifyContent: 'center', // 始终水平居中
-        padding: '16px 0',
-        height: 'min(400px, calc(100vh - 380px))', // 进一步缩小上半区高度，留出更多空间给表格
-        maxWidth: config.layout?.contentMaxWidth || '1200px', // 与表格外框对齐
-        margin: '0 auto', // 水平居中基础
-      }}
-    >
-      {/* Hero Area (Left Column) */}
-      <div 
-        className="hero-area flex flex-col items-center text-center py-4 px-6"
-        {...legacyHoverHandlers}
-        {...panelHoverHandlers}
+    <div className="w-full flex justify-center">
+      <div
+        className="w-full"
+        style={{
+          maxWidth: contentMaxWidth,
+          boxSizing: "border-box",
+        }}
       >
-        <div 
-          className="flex flex-col items-center text-center flex-shrink-0 relative z-10"
+        <div
+          ref={boundsRef}
+          className="relative"
+          data-testid="hero-section"
           style={{
-            ...animationStyle,
+            width: "100%",
+            height: `${bannerHeight}px`,
+            position: "relative",
+            background: theme.background,
+            padding: 0,
+            minHeight: `${bannerHeight}px`, // 确保高度不会收缩
+            maxHeight: `${bannerHeight}px`, // 确保高度不会扩展
           }}
+          onMouseEnter={handleHeaderEnter} // 将悬停检测转移到父容器
+          onMouseLeave={handleHeaderLeave} // 将悬停检测转移到父容器
         >
-          <div 
-            ref={avatarRef}
-            className="rounded-full overflow-hidden mb-6 flex items-center justify-center relative"
-            style={{
-              width: `${avatarConfig.size}px`,
-              height: `${avatarConfig.size}px`,
-              background: "rgba(255,255,255,0.22)",
-              border: `${avatarConfig.borderWidth}px solid ${avatarConfig.borderColor}`,
-              borderRadius: `${avatarConfig.borderRadius}px`,
-              boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+          <Rnd
+            size={{ 
+              width: headerImage?.width || 600, 
+              height: headerImage?.height || 200,
             }}
-            {...hotspotHandlers}
+            position={{ 
+              x: headerImage?.x || 0, 
+              y: headerImage?.y || 0 
+            }}
+            // 添加min和max尺寸限制，确保头图不会被过度压缩
+            minWidth={300}
+            minHeight={150}
+            maxWidth={1200}
+            maxHeight={450}
+            bounds={boundsRef.current || undefined}
+            draggable={canDrag}
+            resizable={canDrag && !isMobile}
+            enableResizing={canDrag && !isMobile}
+            cancel=""
+            enableUserSelectHack={false}
+            allowAnyClick={true}
+            style={{
+              zIndex: headerImage?.zIndex || 1,
+              cursor: canDrag ? (isHoverMode ? "pointer" : "grab") : "default",
+              borderRadius: "12px",
+              userSelect: "none",
+              overflow: "visible",
+              ...getSimpleFadeStyle(headerVisible, isDragging, true),
+            }}
+            onDragStart={handleDragStart}
+            onDrag={(_, data) => {
+              // 实时更新位置，确保拖拽流畅
+              if (canDrag) {
+                onHeaderDragEnd?.({
+                  x: data.x,
+                  y: data.y
+                }, {
+                  width: headerImage?.width || 600,
+                  height: headerImage?.height || 200
+                });
+              }
+            }}
+            onDragStop={(_, data) => {
+              if (canDrag) {
+                onHeaderDragEnd?.({
+                  x: data.x,
+                  y: data.y
+                }, {
+                  width: headerImage?.width || 600,
+                  height: headerImage?.height || 200
+                });
+              }
+              handleDragEnd();
+            }}
+            onResizeStart={handleDragStart}
+            onResize={(_event, _direction, ref, _delta, position) => {
+              // 实时更新大小和位置
+              if (canDrag) {
+                onHeaderDragEnd?.({
+                  x: position.x,
+                  y: position.y
+                }, {
+                  width: ref.offsetWidth,
+                  height: ref.offsetHeight
+                });
+              }
+            }}
+            onResizeStop={(_event, _direction, ref, _delta, position) => {
+              if (canDrag) {
+                onHeaderDragEnd?.({ 
+                  x: position.x,
+                  y: position.y 
+                }, {
+                  width: ref.offsetWidth,
+                  height: ref.offsetHeight 
+                });
+              }
+              handleDragEnd();
+            }}
           >
-            {banner.avatar ? (
-              <img src={banner.avatar} alt="头像" className="w-full h-full object-cover" data-testid="img-avatar" />
-            ) : (
-              <Music className="w-12 h-12" style={{ color: textColor, opacity: 0.6 }} />
+            {headerImage?.src && (
+              <img 
+                src={headerImage.src} 
+                alt="Banner 头图" 
+                className="w-full h-full object-contain absolute inset-0"
+                style={{ pointerEvents: "none", borderRadius: "12px" }}
+              />
             )}
-            
-            {heroHotspot.enabled && isHoverMode && heroHotspot.target === "avatar" && hasCards && (
-              <div 
-                className="absolute inset-0 flex items-center justify-center"
-                style={{ pointerEvents: "none" }}
-              >
-                <div
-                  className="rounded-full flex items-center justify-center cursor-pointer"
+            <div 
+              className="w-full h-full flex items-center justify-center py-4 px-6 relative z-10"
+              style={{ userSelect: "none", backdropFilter: headerImage?.src ? "none" : "blur(12px)" }}
+            >
+              <div className="flex flex-col items-center text-center flex-shrink-0">
+                <div 
+                  className="w-28 h-28 rounded-full overflow-hidden mb-3 flex items-center justify-center relative"
                   style={{
-                    width: `${heroHotspot.sizePx}px`,
-                    height: `${heroHotspot.sizePx}px`,
-                    background: expanded ? "transparent" : "rgba(0,0,0,0.25)",
-                    backdropFilter: expanded ? "none" : "blur(2px)",
-                    transition: "all 200ms ease",
-                    pointerEvents: "auto",
+                    background: "rgba(255,255,255,0.22)",
+                    border: "2px solid rgba(255,255,255,0.35)",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
                   }}
-                  {...hotspotHandlers}
-                  data-testid="hotspot-avatar"
                 >
-                  {heroHotspot.showHint && !expanded && (
-                    <span style={{ color: "#fff", fontSize: "10px", fontWeight: 500, textAlign: "center", padding: "4px" }}>
-                      {heroHotspot.hintText}
-                    </span>
+                  {banner.avatar ? (
+                    <img src={banner.avatar} alt="头像" className="w-full h-full object-cover" data-testid="img-avatar" />
+                  ) : (
+                    <Music className="w-8 h-8" style={{ color: textColor, opacity: 0.6 }} />
                   )}
                 </div>
-              </div>
-            )}
-          </div>
 
-          <div className="relative mb-3">
-            <h1 
-              ref={titleRef}
-              className="tracking-tight"
-              style={{
-                color: textColor,
-                fontSize: banner.styles.titleSize,
-                fontWeight: banner.styles.titleWeight,
-                textShadow: "0 2px 8px rgba(0,0,0,0.1)",
-              }}
-              data-testid="text-hero-title"
-            >
-              {banner.title}
-            </h1>
-            
-            {heroHotspot.enabled && isHoverMode && heroHotspot.target === "title" && hasCards && (
-              <div
-                className="absolute inset-0 flex items-center justify-center cursor-pointer rounded-lg"
-                style={{
-                  background: expanded ? "transparent" : "rgba(0,0,0,0.08)",
-                  transition: "all 200ms ease",
-                }}
-                {...hotspotHandlers}
-                data-testid="hotspot-title"
+                <h1 
+                  className="tracking-tight"
+                  style={{
+                    color: textColor,
+                    fontSize: banner.styles.titleSize,
+                    fontWeight: banner.styles.titleWeight,
+                    textShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                    whiteSpace: "nowrap",
+                  }}
+                  data-testid="text-hero-title"
+                >
+                  {banner.title}
+                </h1>
+
+                <p 
+                  className="mt-1"
+                  style={{
+                    color: textColor,
+                    fontSize: banner.styles.subtitleSize,
+                    fontWeight: banner.styles.subtitleWeight,
+                    opacity: 0.9,
+                    whiteSpace: "nowrap",
+                  }}
+                  data-testid="text-hero-subtitle"
+                >
+                  {banner.subtitle}
+                </p>
+              </div>
+            </div>
+          </Rnd>
+
+          {cards.length > 0 && (shouldRender || displayMode === "always") && cards.map((card) => {
+    const visible = cardsVisible && (card.visible ?? true);
+    return (
+      <Rnd
+        key={card.id}
+        size={{ width: card.width || 280, height: card.height || 200 }}
+        position={{ x: card.x || 0, y: card.y || 0 }}
+        bounds={boundsRef.current || undefined}
+        draggable={canDrag}
+        resizable={canDrag && !isMobile}
+        enableResizing={canDrag && !isMobile}
+        cancel=""
+        enableUserSelectHack={false}
+        allowAnyClick={true}
+        style={{
+          zIndex: card.zIndex || 10,
+          cursor: canDrag ? "grab" : "default",
+          userSelect: "none",
+          pointerEvents: visible ? "auto" : "none",
+          overflow: "visible",
+          ...getSimpleFadeStyle(visible, isDragging, false),
+        }}
+        onDragStart={handleDragStart}
+        onDrag={(_, data) => {
+          // 实时更新位置，确保拖拽流畅
+          if (canDrag) {
+            onCardDragEnd?.(card.id, { x: data.x, y: data.y }, { width: card.width || 280, height: card.height || 200 });
+          }
+        }}
+        onDragStop={(_, data) => {
+          if (canDrag) {
+            onCardDragEnd?.(card.id, { x: data.x, y: data.y }, { width: card.width || 280, height: card.height || 200 });
+          }
+          handleDragEnd();
+        }}
+        onResizeStart={handleDragStart}
+        onResize={(_event, _direction, ref, _delta, position) => {
+          // 实时更新大小和位置
+          if (canDrag) {
+            const newWidth = ref.offsetWidth;
+            const newHeight = ref.offsetHeight;
+            onCardDragEnd?.(card.id, { x: position.x, y: position.y }, { width: newWidth, height: newHeight });
+          }
+        }}
+        onResizeStop={(_event, _direction, ref, _delta, position) => {
+          if (canDrag) {
+            const newWidth = ref.offsetWidth;
+            const newHeight = ref.offsetHeight;
+            onCardDragEnd?.(card.id, { x: position.x, y: position.y }, { width: newWidth, height: newHeight });
+          }
+          handleDragEnd();
+        }}
               >
-                {heroHotspot.showHint && !expanded && (
-                  <span 
-                    className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap"
-                    style={{ color: textColor, fontSize: "11px", opacity: 0.6 }}
-                  >
-                    {heroHotspot.hintText}
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-
-          <p 
-            className="mb-4"
-            style={{
-              color: textColor,
-              fontSize: banner.styles.subtitleSize,
-              fontWeight: banner.styles.subtitleWeight,
-              opacity: 0.9,
-            }}
-            data-testid="text-hero-subtitle"
-          >
-            {banner.subtitle}
-          </p>
-
-          {!isOffMode && hasCards && !heroHotspot.enabled && (
-            <p 
-              style={{
-                color: textColor,
-                fontSize: banner.styles.hintSize,
-                opacity: expanded ? 0 : 0.6,
-                ...animationStyle,
-              }}
-              data-testid="text-hero-hint"
-            >
-              {banner.hint}
-            </p>
-          )}
+                <HoverCard card={card} textColor={textColor} isDragging={isDragging} />
+              </Rnd>
+            );
+          })}
         </div>
-
       </div>
-
-      {/* Cards Area (Right Column) */}
-      {hasCards && (shouldRender || isOffMode) && (
-        <div 
-          ref={cardsContainerRef}
-          className="cardColumnWrap flex-shrink-0 relative h-full flex flex-col justify-center" // 垂直居中容器
-          style={{
-            ...animationStyle,
-            opacity: cardsVisible ? 1 : 0,
-            pointerEvents: cardsVisible ? "auto" : "none",
-            height: "100%", // 与头图区域同高
-            width: "100%",
-            overflow: "hidden", // 确保无滚动条
-            padding: "8px 0",
-          }}
-          onMouseEnter={handleCardsEnter}
-        >
-          <div 
-            className="cardsInner" // 使用CSS多列布局
-            style={{
-              height: "100%",
-              columns: `3 ${cardLayout.cardWidth}`, // 最多3列，每列宽度
-              columnFill: "auto", // 从上到下填充
-              columnGap: `${cardLayout.cardGap}px`, // 列间距
-              gap: `${cardLayout.cardGap}px`, // 同时设置gap确保兼容性
-              padding: "0 4px",
-            }}
-          >
-            {cards.map((card, index) => (
-              <div 
-                key={card.id} 
-                ref={el => cardRefs.current[index] = el}
-                style={{ 
-                  marginBottom: "16px",
-                  breakInside: "avoid", // 避免卡片被拆分到不同列
-                }}
-              >
-                <HoverCard card={card} textColor={textColor} config={config} />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

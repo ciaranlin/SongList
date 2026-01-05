@@ -18,6 +18,7 @@
       "hintSize": "13px"
     }
   },
+<<<<<<< HEAD
   "avatarConfig": {
     "size": 160,
     "borderWidth": "2px",
@@ -42,6 +43,15 @@
     "borderRadius": "8px",
     "padding": "0px",
     "backgroundColor": "transparent"
+=======
+  "headerImage": {
+    "x": 0,
+    "y": 107,
+    "width": 600,
+    "height": 200,
+    "src": "",
+    "zIndex": 1
+>>>>>>> 4c14f13 (banner)
   },
   "hoverBehavior": {
     "enabled": true,
@@ -70,6 +80,13 @@
     "showHint": true,
     "hintText": "移入展开",
     "debounceMs": 120
+  },
+  "displayMode": "always",
+  "heroAnimation": {
+    "headerAnimationPreset": "none",
+    "cardAnimationPreset": "fade",
+    "animationDurationMs": 400,
+    "animationEasing": "cubic-bezier(0.4, 0, 0.2, 1)"
   },
   "copyConfig": {
     "enabled": true,
@@ -109,6 +126,12 @@
           }
         }
       ],
+      "x": 427,
+      "y": 69,
+      "width": 280,
+      "height": 200,
+      "zIndex": 10,
+      "visible": true,
       "styles": {
         "padding": "16px",
         "borderRadius": "16px",
@@ -129,6 +152,12 @@
       "body": "",
       "image": "/uploads/4b606f91-e022-4441-961d-e4a62ca40916.jpg",
       "links": [],
+      "x": 433,
+      "y": 228,
+      "width": 280,
+      "height": 200,
+      "zIndex": 10,
+      "visible": true,
       "styles": {
         "padding": "16px",
         "borderRadius": "16px",

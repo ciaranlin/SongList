@@ -42,6 +42,7 @@ export const cardSchema = z.object({
   body: z.string().optional(),
   image: z.string().optional(), // Card image URL
   links: z.array(linkItemSchema).default([]),
+<<<<<<< HEAD
   styles: z
     .object({
       padding: z.string().default("16px"),
@@ -59,6 +60,27 @@ export const cardSchema = z.object({
       lineHeight: z.string().default("1.5"),
     })
     .default({}),
+=======
+  x: z.number().default(0),
+  y: z.number().default(0),
+  width: z.number().default(280),
+  height: z.number().default(200),
+  zIndex: z.number().default(10),
+  visible: z.boolean().default(true),
+  styles: z.object({
+    padding: z.string().default("16px"),
+    borderRadius: z.string().default("16px"),
+    background: z.string().default("rgba(255,255,255,0.22)"),
+    border: z.string().default("1px solid rgba(255,255,255,0.35)"),
+    shadow: z.string().default("0 4px 16px rgba(0,0,0,0.08)"),
+  }).default({}),
+  typography: z.object({
+    titleSize: z.string().default("16px"),
+    titleWeight: z.string().default("600"),
+    bodySize: z.string().default("14px"),
+    lineHeight: z.string().default("1.5"),
+  }).default({}),
+>>>>>>> 4c14f13 (banner)
 });
 
 export type Card = z.infer<typeof cardSchema>;
@@ -123,6 +145,8 @@ export const heroCardsSchema = z
   .default({});
 
 export type HeroCards = z.infer<typeof heroCardsSchema>;
+
+
 
 // Hero hotspot configuration for precise hover trigger
 export const heroHotspotSchema = z
@@ -204,6 +228,7 @@ export const siteConfigSchema = z.object({
       hintSize: z.string().default("13px"),
     }).default({}),
   }).default({}),
+<<<<<<< HEAD
   avatarConfig: avatarConfigSchema,
   cardLayout: cardLayoutSchema,
   cardImageConfig: cardImageConfigSchema,
@@ -215,9 +240,26 @@ export const siteConfigSchema = z.object({
       fadeOutDuration: z.number().default(200),
     })
     .default({}),
+=======
+  headerImage: z.object({
+    x: z.number().default(0),
+    y: z.number().default(0),
+    width: z.number().default(1200),
+    height: z.number().default(360),
+    src: z.string().default(""),
+    zIndex: z.number().default(1),
+  }).default({}),
+  hoverBehavior: z.object({
+    enabled: z.boolean().default(true),
+    showOnHeroHover: z.boolean().default(true),
+    fadeInDuration: z.number().default(250),
+    fadeOutDuration: z.number().default(200),
+  }).default({}),
+>>>>>>> 4c14f13 (banner)
   cardAnimation: cardAnimationSchema,
   heroCards: heroCardsSchema,
   heroHotspot: heroHotspotSchema,
+  displayMode: z.enum(["always", "hoverReveal"]).default("always"),
   copyConfig: copyConfigSchema,
   filterHint: filterHintSchema,
   entryIcons: entryIconsSchema,
@@ -263,6 +305,7 @@ export const defaultConfig: SiteConfig = {
       hintSize: "13px",
     },
   },
+<<<<<<< HEAD
   avatarConfig: {
     size: 160,
     borderWidth: "2px",
@@ -287,6 +330,15 @@ export const defaultConfig: SiteConfig = {
     borderRadius: "8px",
     padding: "0px",
     backgroundColor: "transparent",
+=======
+  headerImage: {
+    x: 0,
+    y: 0,
+    width: 1200,
+    height: 360,
+    src: "",
+    zIndex: 1,
+>>>>>>> 4c14f13 (banner)
   },
   hoverBehavior: {
     enabled: true,
@@ -333,11 +385,18 @@ export const defaultConfig: SiteConfig = {
     showYuEntry: true,
     showConfigEntry: true,
   },
+  displayMode: "always",
   cards: [
     {
       id: "card-1",
       title: "关于我",
       body: "一个热爱音乐的虚拟歌手，喜欢和大家分享歌曲！",
+      x: 20,
+      y: 80,
+      width: 280,
+      height: 200,
+      zIndex: 10,
+      visible: true,
       links: [
         {
           id: "link-1",
@@ -386,6 +445,12 @@ export const defaultConfig: SiteConfig = {
       id: "card-2",
       title: "点歌说明",
       body: "舰长可以在直播期间点歌哦！",
+      x: 320,
+      y: 120,
+      width: 280,
+      height: 200,
+      zIndex: 10,
+      visible: true,
       links: [
         {
           id: "link-3",
