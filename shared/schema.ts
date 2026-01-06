@@ -35,12 +35,45 @@ export const linkItemSchema = z.object({
 
 export type LinkItem = z.infer<typeof linkItemSchema>;
 
+// Card image display configuration
+export const cardImageConfigSchema = z
+  .object({
+    fit: z.enum(["contain", "cover"]).default("cover"),
+    posX: z.number().min(0).max(100).default(50), // percentage
+    posY: z.number().min(0).max(100).default(50), // percentage
+    scale: z.number().min(0.5).max(2).default(1),
+    boxWidth: z.string().default("100%"),
+    boxHeight: z.string().default("128px"),
+    borderRadius: z.string().default("8px"),
+    padding: z.string().default("0px"),
+    backgroundColor: z.string().default("transparent"),
+  })
+  .default({});
+
+export type CardImageConfig = z.infer<typeof cardImageConfigSchema>;
+
+// Card animation configuration for card area (legacy, kept for compatibility)
+export const cardAnimationSchema = z
+  .object({
+    type: z
+      .enum(["none", "fade", "slide", "scale", "fadeSlide"])
+      .default("fade"),
+    durationMs: z.number().default(200),
+    delayMs: z.number().default(0),
+    trigger: z.enum(["hover", "always", "click"]).default("hover"),
+    mobileTrigger: z.enum(["always", "click"]).default("always"),
+  })
+  .default({});
+
+export type CardAnimation = z.infer<typeof cardAnimationSchema>;
+
 // Card configuration
 export const cardSchema = z.object({
   id: z.string(),
   title: z.string(),
   body: z.string().optional(),
   image: z.string().optional(), // Card image URL
+  imageConfig: cardImageConfigSchema.default({}), // Per-card image configuration
   links: z.array(linkItemSchema).default([]),
   x: z.number().default(0),
   y: z.number().default(0),
@@ -64,38 +97,6 @@ export const cardSchema = z.object({
 });
 
 export type Card = z.infer<typeof cardSchema>;
-
-// Card animation configuration for card area (legacy, kept for compatibility)
-export const cardAnimationSchema = z
-  .object({
-    type: z
-      .enum(["none", "fade", "slide", "scale", "fadeSlide"])
-      .default("fade"),
-    durationMs: z.number().default(200),
-    delayMs: z.number().default(0),
-    trigger: z.enum(["hover", "always", "click"]).default("hover"),
-    mobileTrigger: z.enum(["always", "click"]).default("always"),
-  })
-  .default({});
-
-export type CardAnimation = z.infer<typeof cardAnimationSchema>;
-
-// Card image display configuration
-export const cardImageConfigSchema = z
-  .object({
-    fit: z.enum(["contain", "cover"]).default("cover"),
-    posX: z.number().min(0).max(100).default(50), // percentage
-    posY: z.number().min(0).max(100).default(50), // percentage
-    scale: z.number().min(0.5).max(2).default(1),
-    boxWidth: z.string().default("100%"),
-    boxHeight: z.string().default("128px"),
-    borderRadius: z.string().default("8px"),
-    padding: z.string().default("0px"),
-    backgroundColor: z.string().default("transparent"),
-  })
-  .default({});
-
-export type CardImageConfig = z.infer<typeof cardImageConfigSchema>;
 
 // Card layout configuration
 export const cardLayoutSchema = z

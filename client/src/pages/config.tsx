@@ -32,19 +32,42 @@ import {
 import { SiBilibili } from "react-icons/si";
 
 const ICON_OPTIONS = [
-  { value: "globe", label: "全球", Icon: undefined },
+  { value: "album-fill", label: "专辑", Icon: undefined },
+  { value: "alipay-fill", label: "支付宝", Icon: undefined },
+  { value: "anchor-line", label: "主播", Icon: undefined },
+  { value: "apple-line", label: "苹果", Icon: undefined },
+  { value: "bilibili-line", label: "哔哩哔哩", Icon: undefined },
+  { value: "disc-line", label: "唱片", Icon: undefined },
+  { value: "external-link-line", label: "外部链接", Icon: undefined },
+  { value: "file-copy-line", label: "复制", Icon: undefined },
+  { value: "github-fill", label: "GitHub", Icon: undefined },
+  { value: "home-3-line", label: "主页", Icon: undefined },
+  { value: "link-unlink", label: "链接管理", Icon: undefined },
+  { value: "link", label: "链接", Icon: undefined },
+  { value: "links-fill", label: "链接填充", Icon: undefined },
+  { value: "music-2-line", label: "音乐", Icon: undefined },
+  { value: "netease-cloud-music-line", label: "网易云音乐", Icon: undefined },
+  { value: "qq-line", label: "QQ", Icon: undefined },
+  { value: "search-2-line", label: "搜索", Icon: undefined },
+  { value: "settings-line", label: "设置", Icon: undefined },
+  { value: "steam-fill", label: "Steam", Icon: undefined },
+  { value: "wechat-2-line", label: "微信", Icon: undefined },
+  { value: "wechat-fill", label: "微信填充", Icon: undefined },
+  { value: "weibo-line", label: "微博", Icon: undefined },
+  { value: "zhihu-fill", label: "知乎", Icon: undefined },
+  // 兼容旧图标名称
   { value: "twitter", label: "推特", Icon: undefined },
   { value: "youtube", label: "油管", Icon: undefined },
   { value: "bilibili", label: "哔哩哔哩", Icon: undefined },
   { value: "github", label: "GitHub", Icon: undefined },
   { value: "mail", label: "邮件", Icon: undefined },
-  { value: "link", label: "链接", Icon: undefined },
   { value: "share", label: "分享", Icon: undefined },
   { value: "phone", label: "电话", Icon: undefined },
   { value: "mappin", label: "位置", Icon: undefined },
   { value: "facebook", label: "Facebook", Icon: undefined },
   { value: "instagram", label: "Instagram", Icon: undefined },
   { value: "linkedin", label: "LinkedIn", Icon: undefined },
+  { value: "globe", label: "全球", Icon: undefined },
 ];
 
 export default function ConfigPage() {
@@ -188,6 +211,17 @@ export default function ConfigPage() {
       zIndex: 10,
       visible: true,
       image: "",
+      imageConfig: {
+        fit: "cover",
+        posX: 50,
+        posY: 50,
+        scale: 1,
+        boxWidth: "100%",
+        boxHeight: "128px",
+        borderRadius: "8px",
+        padding: "0px",
+        backgroundColor: "transparent",
+      },
     };
     setPreviewConfig(prev => ({ ...prev, cards: [...prev.cards, newCard] }));
   }, []);
@@ -476,6 +510,291 @@ export default function ConfigPage() {
                     </div>
                   </div>
                 </div>
+                
+                {/* 图片配置 */}
+                {card.image && (
+                  <div className="pt-2 border-t space-y-3">
+                    <Label className="text-sm font-medium block">图片配置</Label>
+                    
+                    {/* 图片大小 */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs mb-1 block">宽度</Label>
+                        <Input 
+                          type="text" 
+                          value={card.imageConfig?.boxWidth || "100%"} 
+                          onChange={(e) => updateCard(card.id, { 
+                            imageConfig: { 
+                              ...(card.imageConfig || { 
+                                fit: "cover",
+                                posX: 50,
+                                posY: 50,
+                                scale: 1,
+                                boxWidth: "100%",
+                                boxHeight: "128px",
+                                borderRadius: "8px",
+                                padding: "0px",
+                                backgroundColor: "transparent",
+                              }), 
+                              boxWidth: e.target.value 
+                            } 
+                          })} 
+                          className="rounded-lg text-sm h-8" 
+                          placeholder="100%" 
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs mb-1 block">高度</Label>
+                        <Input 
+                          type="text" 
+                          value={card.imageConfig?.boxHeight || "128px"} 
+                          onChange={(e) => updateCard(card.id, { 
+                            imageConfig: { 
+                              ...(card.imageConfig || { 
+                                fit: "cover",
+                                posX: 50,
+                                posY: 50,
+                                scale: 1,
+                                boxWidth: "100%",
+                                boxHeight: "128px",
+                                borderRadius: "8px",
+                                padding: "0px",
+                                backgroundColor: "transparent",
+                              }), 
+                              boxHeight: e.target.value 
+                            } 
+                          })} 
+                          className="rounded-lg text-sm h-8" 
+                          placeholder="128px" 
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* 图片拟合方式 */}
+                    <div>
+                      <Label className="text-xs mb-1 block">拟合方式</Label>
+                      <Select 
+                        value={card.imageConfig?.fit || "cover"} 
+                        onValueChange={(value) => updateCard(card.id, { 
+                          imageConfig: { 
+                            ...(card.imageConfig || { 
+                              fit: "cover",
+                              posX: 50,
+                              posY: 50,
+                              scale: 1,
+                              boxWidth: "100%",
+                              boxHeight: "128px",
+                              borderRadius: "8px",
+                              padding: "0px",
+                              backgroundColor: "transparent",
+                            }), 
+                            fit: value as "contain" | "cover" 
+                          } 
+                        })} 
+                      >
+                        <SelectTrigger className="rounded-lg text-sm h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="contain">包含</SelectItem>
+                          <SelectItem value="cover">覆盖</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {/* 图片缩放 */}
+                    <div>
+                      <Label className="text-xs mb-1 block">缩放比例: {(card.imageConfig?.scale || 1).toFixed(1)}x</Label>
+                      <input 
+                        type="range" 
+                        min="0.5" 
+                        max="2" 
+                        step="0.1" 
+                        value={card.imageConfig?.scale || 1} 
+                        onChange={(e) => updateCard(card.id, { 
+                          imageConfig: { 
+                            ...(card.imageConfig || { 
+                              fit: "cover",
+                              posX: 50,
+                              posY: 50,
+                              scale: 1,
+                              boxWidth: "100%",
+                              boxHeight: "128px",
+                              borderRadius: "8px",
+                              padding: "0px",
+                              backgroundColor: "transparent",
+                            }), 
+                            scale: parseFloat(e.target.value) 
+                          } 
+                        })} 
+                        className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer" 
+                      />
+                    </div>
+                    
+                    {/* 图片位置 */}
+                    <div className="space-y-2">
+                      <Label className="text-xs mb-1 block">图片位置</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs mb-1 block">水平: {(card.imageConfig?.posX || 50)}%</Label>
+                          <input 
+                            type="range" 
+                            min="0" 
+                            max="100" 
+                            value={card.imageConfig?.posX || 50} 
+                            onChange={(e) => updateCard(card.id, { 
+                              imageConfig: { 
+                                ...(card.imageConfig || { 
+                                  fit: "cover",
+                                  posX: 50,
+                                  posY: 50,
+                                  scale: 1,
+                                  boxWidth: "100%",
+                                  boxHeight: "128px",
+                                  borderRadius: "8px",
+                                  padding: "0px",
+                                  backgroundColor: "transparent",
+                                }), 
+                                posX: parseInt(e.target.value) 
+                              } 
+                            })} 
+                            className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer" 
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs mb-1 block">垂直: {(card.imageConfig?.posY || 50)}%</Label>
+                          <input 
+                            type="range" 
+                            min="0" 
+                            max="100" 
+                            value={card.imageConfig?.posY || 50} 
+                            onChange={(e) => updateCard(card.id, { 
+                              imageConfig: { 
+                                ...(card.imageConfig || { 
+                                  fit: "cover",
+                                  posX: 50,
+                                  posY: 50,
+                                  scale: 1,
+                                  boxWidth: "100%",
+                                  boxHeight: "128px",
+                                  borderRadius: "8px",
+                                  padding: "0px",
+                                  backgroundColor: "transparent",
+                                }), 
+                                posY: parseInt(e.target.value) 
+                              } 
+                            })} 
+                            className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer" 
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* 圆角和内边距 */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs mb-1 block">圆角</Label>
+                        <Input 
+                          type="text" 
+                          value={card.imageConfig?.borderRadius || "8px"} 
+                          onChange={(e) => updateCard(card.id, { 
+                            imageConfig: { 
+                              ...(card.imageConfig || { 
+                                fit: "cover",
+                                posX: 50,
+                                posY: 50,
+                                scale: 1,
+                                boxWidth: "100%",
+                                boxHeight: "128px",
+                                borderRadius: "8px",
+                                padding: "0px",
+                                backgroundColor: "transparent",
+                              }), 
+                              borderRadius: e.target.value 
+                            } 
+                          })} 
+                          className="rounded-lg text-sm h-8" 
+                          placeholder="8px" 
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs mb-1 block">内边距</Label>
+                        <Input 
+                          type="text" 
+                          value={card.imageConfig?.padding || "0px"} 
+                          onChange={(e) => updateCard(card.id, { 
+                            imageConfig: { 
+                              ...(card.imageConfig || { 
+                                fit: "cover",
+                                posX: 50,
+                                posY: 50,
+                                scale: 1,
+                                boxWidth: "100%",
+                                boxHeight: "128px",
+                                borderRadius: "8px",
+                                padding: "0px",
+                                backgroundColor: "transparent",
+                              }), 
+                              padding: e.target.value 
+                            } 
+                          })} 
+                          className="rounded-lg text-sm h-8" 
+                          placeholder="0px" 
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* 背景色 */}
+                    <div>
+                      <Label className="text-xs mb-1 block">背景色</Label>
+                      <div className="flex items-center gap-2">
+                        <Input 
+                          type="color" 
+                          value={card.imageConfig?.backgroundColor || "#ffffff"} 
+                          onChange={(e) => updateCard(card.id, { 
+                            imageConfig: { 
+                              ...(card.imageConfig || { 
+                                fit: "cover",
+                                posX: 50,
+                                posY: 50,
+                                scale: 1,
+                                boxWidth: "100%",
+                                boxHeight: "128px",
+                                borderRadius: "8px",
+                                padding: "0px",
+                                backgroundColor: "transparent",
+                              }), 
+                              backgroundColor: e.target.value 
+                            } 
+                          })} 
+                          className="w-10 h-8 p-0 rounded-lg cursor-pointer" 
+                        />
+                        <Input 
+                          type="text" 
+                          value={card.imageConfig?.backgroundColor || "transparent"} 
+                          onChange={(e) => updateCard(card.id, { 
+                            imageConfig: { 
+                              ...(card.imageConfig || { 
+                                fit: "cover",
+                                posX: 50,
+                                posY: 50,
+                                scale: 1,
+                                boxWidth: "100%",
+                                boxHeight: "128px",
+                                borderRadius: "8px",
+                                padding: "0px",
+                                backgroundColor: "transparent",
+                              }), 
+                              backgroundColor: e.target.value 
+                            } 
+                          })} 
+                          className="flex-1 rounded-lg text-sm h-8" 
+                          placeholder="transparent" 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm">链接 ({card.links.length})</Label>

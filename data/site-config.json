@@ -19,8 +19,8 @@
     }
   },
   "headerImage": {
-    "x": 417,
-    "y": 180,
+    "x": 426,
+    "y": 115,
     "width": 250,
     "height": 250,
     "src": "",
@@ -77,12 +77,23 @@
       "id": "card-1",
       "title": "关于我",
       "body": "一个热爱音乐的虚拟歌手，喜欢和大家分享歌曲！",
+      "imageConfig": {
+        "fit": "cover",
+        "posX": 50,
+        "posY": 50,
+        "scale": 1,
+        "boxWidth": "100%",
+        "boxHeight": "128px",
+        "borderRadius": "8px",
+        "padding": "0px",
+        "backgroundColor": "transparent"
+      },
       "links": [
         {
           "id": "link-1",
-          "url": "https://twitter.com",
-          "label": "推特",
-          "icon": "twitter",
+          "url": "https://qm.qq.com/q/LbIYmXvRmy",
+          "label": "粉丝群",
+          "icon": "qq-line",
           "openInNewTab": true,
           "styles": {
             "padding": "6px 12px",
@@ -93,10 +104,10 @@
           }
         },
         {
-          "id": "link-2",
-          "url": "https://youtube.com",
-          "label": "油管",
-          "icon": "youtube",
+          "id": "link-1767665868766",
+          "url": "",
+          "label": "录播组",
+          "icon": "album-fill",
           "openInNewTab": true,
           "styles": {
             "padding": "6px 12px",
@@ -109,7 +120,7 @@
       ],
       "x": 23,
       "y": 37,
-      "width": 280,
+      "width": 273,
       "height": 278,
       "zIndex": 10,
       "visible": true,
@@ -131,6 +142,18 @@
       "id": "card-2",
       "title": "点歌说明",
       "body": "舰长可以在直播期间点歌哦！",
+      "image": "/uploads/ead53aab-6177-4edb-a490-64d0668af76d.gif",
+      "imageConfig": {
+        "fit": "contain",
+        "posX": 50,
+        "posY": 70,
+        "scale": 0.6,
+        "boxWidth": "100%",
+        "boxHeight": "128px",
+        "borderRadius": "8px",
+        "padding": "0px",
+        "backgroundColor": "transparent"
+      },
       "links": [
         {
           "id": "link-3",
@@ -147,10 +170,10 @@
           }
         }
       ],
-      "x": 907,
-      "y": 46,
-      "width": 280,
-      "height": 200,
+      "x": 793,
+      "y": 87,
+      "width": 250,
+      "height": 257,
       "zIndex": 10,
       "visible": true,
       "styles": {
