@@ -98,7 +98,34 @@ export const cardSchema = z.object({
 
 export type Card = z.infer<typeof cardSchema>;
 
-// Card layout configuration
+// Responsive layout configuration
+export const responsiveLayoutSchema = z.object({
+  // Desktop configuration
+  desktop: z.object({
+    enabled: z.boolean().default(true),
+    allowAbsolutePositioning: z.boolean().default(true),
+  }).default({}),
+  // Mobile configuration
+  mobile: z.object({
+    enabled: z.boolean().default(true),
+    layoutMode: z.enum(["auto-grid", "columns"]).default("auto-grid"),
+    columnCount: z.number().min(1).max(2).default(1),
+    cardGap: z.number().min(8).max(32).default(16),
+    safeInsets: z.number().min(12).max(32).default(16),
+    allowOverlap: z.boolean().default(false),
+    displayMode: z.enum(["always"]).default("always"), // Mobile only supports always-visible mode
+  }).default({}),
+  // Grid-based layout configuration
+  grid: z.object({
+    columnCount: z.number().min(2).max(4).default(2), // for desktop grid mode
+    cardWidth: z.string().default("280px"), // width of a single card/column
+    cardGap: z.number().min(0).max(40).default(12), // gap between cards
+  }).default({}),
+}).default({});
+
+export type ResponsiveLayout = z.infer<typeof responsiveLayoutSchema>;
+
+// Card layout configuration (legacy support, kept for compatibility)
 export const cardLayoutSchema = z
   .object({
     mode: z.enum(["columns", "grid"]).default("columns"), // mode A: columns, mode B: grid
@@ -239,6 +266,8 @@ export const siteConfigSchema = z.object({
       filterBarPadding: z.string().default("16px"),
     })
     .default({}),
+  // Responsive layout configuration
+  responsiveLayout: responsiveLayoutSchema.default({}),
   filterBar: z
     .object({
       languageTabBackground: z.string().default("rgba(255,255,255,0.45)"),
@@ -427,6 +456,27 @@ export const defaultConfig: SiteConfig = {
     alignWithTable: true,
     filterBarGap: "12px",
     filterBarPadding: "16px",
+  },
+  // Responsive layout configuration
+  responsiveLayout: {
+    desktop: {
+      enabled: true,
+      allowAbsolutePositioning: true,
+    },
+    mobile: {
+      enabled: true,
+      layoutMode: "auto-grid",
+      columnCount: 1,
+      cardGap: 16,
+      safeInsets: 16,
+      allowOverlap: false,
+      displayMode: "always",
+    },
+    grid: {
+      columnCount: 2,
+      cardWidth: "280px",
+      cardGap: 12,
+    },
   },
   filterBar: {
     languageTabBackground: "rgba(255,255,255,0.45)",

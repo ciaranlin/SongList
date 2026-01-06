@@ -133,17 +133,103 @@ function getSimpleFadeStyle(visible: boolean, isDragging: boolean, isHeader: boo
   } as CSSProperties;
 }
 
+// Types for layout conversion
+export interface MobileLayoutCard {
+  card: CardType;
+  gridPosition: {
+    row: number;
+    col: number;
+    width: number; // percentage width
+    height: number; // percentage height or auto
+  };
+  percentageSize: {
+    width: number;
+    height: number;
+  };
+}
+
+// Layout conversion logic: converts desktop absolute layout to mobile grid layout
+const convertDesktopToMobileLayout = (cards: CardType[], containerWidth: number, mobileConfig: any): MobileLayoutCard[] => {
+  // Calculate container width with safe insets
+  const safeContainerWidth = containerWidth - (mobileConfig.safeInsets * 2);
+  const columnCount = mobileConfig.columnCount;
+  const cardGap = mobileConfig.cardGap;
+  
+  // Calculate base card width for grid layout
+  const cardWidth = (safeContainerWidth - (cardGap * (columnCount - 1))) / columnCount;
+  const cardWidthPercent = (cardWidth / safeContainerWidth) * 100;
+  
+  // Create mobile layout cards with grid positioning
+  return cards.map((card, index) => {
+    // For auto-grid, calculate row and column based on index
+    const col = index % columnCount;
+    const row = Math.floor(index / columnCount);
+    
+    // Calculate height as percentage based on aspect ratio
+    const aspectRatio = card.height / card.width;
+    const cardHeightPercent = cardWidthPercent * aspectRatio;
+    
+    return {
+      card,
+      gridPosition: {
+        row,
+        col,
+        width: cardWidthPercent,
+        height: cardHeightPercent,
+      },
+      percentageSize: {
+        width: cardWidthPercent,
+        height: cardHeightPercent,
+      },
+    };
+  });
+}
+
 export function HeroSection({ config, isMobile, onCardDragEnd, onHeaderDragEnd, canDrag = false }: HeroSectionProps) {
-  const { banner, theme, cards, headerImage, displayMode: incomingMode } = config;
+  const { banner, theme, cards, headerImage, displayMode: incomingMode, responsiveLayout } = config;
   const boundsRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(1200);
+  const [mobileLayoutCards, setMobileLayoutCards] = useState<MobileLayoutCard[]>([]);
+
+  // Get responsive layout config with defaults
+  const mobileConfig = responsiveLayout?.mobile || {
+    columnCount: 1,
+    cardGap: 16,
+    safeInsets: 16,
+    layoutMode: "auto-grid",
+  };
 
   const contentMaxWidth = config.layout?.contentMaxWidth || "1200px";
   const displayMode = isMobile ? "always" : (incomingMode ?? "always");
   const isHoverMode = displayMode === "hoverReveal";
   const [expanded, setExpanded] = useState(displayMode === "always");
-  const [mobileExpanded, setMobileExpanded] = useState(false);
   const [shouldRender, setShouldRender] = useState(displayMode === "always");
   const [isDragging, setIsDragging] = useState(false); // 跟踪是否正在拖拽
+
+  // Update container width for layout calculations
+  useEffect(() => {
+    const updateContainerWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth);
+      }
+    };
+
+    updateContainerWidth();
+    window.addEventListener('resize', updateContainerWidth);
+    
+    return () => {
+      window.removeEventListener('resize', updateContainerWidth);
+    };
+  }, []);
+
+  // Convert desktop layout to mobile layout when cards or container width changes
+  useEffect(() => {
+    if (isMobile && cards.length > 0) {
+      const mobileCards = convertDesktopToMobileLayout(cards, containerWidth, mobileConfig);
+      setMobileLayoutCards(mobileCards);
+    }
+  }, [isMobile, cards, containerWidth, mobileConfig]);
 
   // 拖拽开始时禁用过渡效果
   const handleDragStart = useCallback(() => {
@@ -222,7 +308,7 @@ export function HeroSection({ config, isMobile, onCardDragEnd, onHeaderDragEnd, 
 
   if (isMobile) {
     return (
-      <div className="w-full" data-testid="hero-section">
+      <div ref={containerRef} className="w-full" data-testid="hero-section">
         <div className="py-8 px-4 flex flex-col items-center text-center">
           <div 
             className="w-20 h-20 rounded-full overflow-hidden mb-4 flex items-center justify-center flex-shrink-0"
@@ -267,10 +353,24 @@ export function HeroSection({ config, isMobile, onCardDragEnd, onHeaderDragEnd, 
         </div>
 
         {cards.length > 0 && (
-          <div className="px-4 pb-4">
-            <div className="flex flex-col gap-4 mt-4">
-              {cards.map((card) => (
-                <HoverCard key={card.id} card={card} textColor={textColor} />
+          <div 
+            className="px-4 pb-4"
+            style={{
+              padding: `${mobileConfig.safeInsets}px`,
+            }}
+          >
+            {/* Mobile grid layout - auto-generated from desktop layout */}
+            <div 
+              className="grid gap-4"
+              style={{
+                gridTemplateColumns: `repeat(${mobileConfig.columnCount}, 1fr)`,
+                gap: `${mobileConfig.cardGap}px`,
+              }}
+            >
+              {mobileLayoutCards.map(({ card }) => (
+                <div key={card.id} className="w-full">
+                  <HoverCard card={card} textColor={textColor} />
+                </div>
               ))}
             </div>
           </div>
