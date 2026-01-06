@@ -345,6 +345,7 @@ export function HeroSection({ config, isMobile, onCardDragEnd, onHeaderDragEnd, 
           onMouseEnter={handleHeaderEnter} // 将悬停检测转移到父容器
           onMouseLeave={handleHeaderLeave} // 将悬停检测转移到父容器
         >
+          {/* 恢复使用Rnd组件，移除调试代码 */}
           <Rnd
             size={{ 
               width: headerImage?.width || 600, 
@@ -354,21 +355,21 @@ export function HeroSection({ config, isMobile, onCardDragEnd, onHeaderDragEnd, 
               x: headerImage?.x || 0, 
               y: headerImage?.y || 0 
             }}
-            // 添加min和max尺寸限制，确保头图不会被过度压缩
-            minWidth={300}
+            // 头图左右各缩小三分之一，总宽度变为原来的一半
+            minWidth={250}
             minHeight={150}
-            maxWidth={1200}
-            maxHeight={450}
-            bounds={boundsRef.current || undefined}
+            maxWidth={500}
+            maxHeight={250}
+            bounds="parent"
             draggable={canDrag}
             resizable={canDrag && !isMobile}
             enableResizing={canDrag && !isMobile}
             cancel=""
-            enableUserSelectHack={false}
+            enableUserSelectHack={true}
             allowAnyClick={true}
             style={{
               zIndex: headerImage?.zIndex || 1,
-              cursor: canDrag ? (isHoverMode ? "pointer" : "grab") : "default",
+              cursor: canDrag ? "grab" : "default",
               borderRadius: "12px",
               userSelect: "none",
               overflow: "visible",
@@ -378,10 +379,7 @@ export function HeroSection({ config, isMobile, onCardDragEnd, onHeaderDragEnd, 
             onDrag={(_, data) => {
               // 实时更新位置，确保拖拽流畅
               if (canDrag) {
-                onHeaderDragEnd?.({
-                  x: data.x,
-                  y: data.y
-                }, {
+                onHeaderDragEnd?.({ x: data.x, y: data.y }, {
                   width: headerImage?.width || 600,
                   height: headerImage?.height || 200
                 });
@@ -389,10 +387,7 @@ export function HeroSection({ config, isMobile, onCardDragEnd, onHeaderDragEnd, 
             }}
             onDragStop={(_, data) => {
               if (canDrag) {
-                onHeaderDragEnd?.({
-                  x: data.x,
-                  y: data.y
-                }, {
+                onHeaderDragEnd?.({ x: data.x, y: data.y }, {
                   width: headerImage?.width || 600,
                   height: headerImage?.height || 200
                 });
@@ -403,10 +398,7 @@ export function HeroSection({ config, isMobile, onCardDragEnd, onHeaderDragEnd, 
             onResize={(_event, _direction, ref, _delta, position) => {
               // 实时更新大小和位置
               if (canDrag) {
-                onHeaderDragEnd?.({
-                  x: position.x,
-                  y: position.y
-                }, {
+                onHeaderDragEnd?.({ x: position.x, y: position.y }, {
                   width: ref.offsetWidth,
                   height: ref.offsetHeight
                 });
@@ -414,12 +406,9 @@ export function HeroSection({ config, isMobile, onCardDragEnd, onHeaderDragEnd, 
             }}
             onResizeStop={(_event, _direction, ref, _delta, position) => {
               if (canDrag) {
-                onHeaderDragEnd?.({ 
-                  x: position.x,
-                  y: position.y 
-                }, {
+                onHeaderDragEnd?.({ x: position.x, y: position.y }, {
                   width: ref.offsetWidth,
-                  height: ref.offsetHeight 
+                  height: ref.offsetHeight
                 });
               }
               handleDragEnd();
@@ -435,7 +424,11 @@ export function HeroSection({ config, isMobile, onCardDragEnd, onHeaderDragEnd, 
             )}
             <div 
               className="w-full h-full flex items-center justify-center py-4 px-6 relative z-10"
-              style={{ userSelect: "none", backdropFilter: headerImage?.src ? "none" : "blur(12px)" }}
+              style={{ 
+                userSelect: "none", 
+                backdropFilter: headerImage?.src ? "none" : "blur(12px)",
+                pointerEvents: canDrag ? "none" : "auto"
+              }}
             >
               <div className="flex flex-col items-center text-center flex-shrink-0">
                 <div 

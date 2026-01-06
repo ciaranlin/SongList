@@ -6,7 +6,7 @@
     "manualTextColor": "#1B1B1B"
   },
   "banner": {
-    "avatar": "/uploads/ab7ad1ae-d889-4d73-9b35-393575232095.webp",
+    "avatar": "",
     "title": "歌单列表",
     "subtitle": "欢迎来到我的歌单",
     "hint": "移入查看更多",
@@ -18,40 +18,13 @@
       "hintSize": "13px"
     }
   },
-<<<<<<< HEAD
-  "avatarConfig": {
-    "size": 160,
-    "borderWidth": "2px",
-    "borderColor": "rgba(255,255,255,0.35)",
-    "borderRadius": "50%"
-  },
-  "cardLayout": {
-    "mode": "columns",
-    "areaHeight": "42vh",
-    "columnCount": 3,
-    "cardWidth": "280px",
-    "cardGap": 12,
-    "mobileColumnCount": 1
-  },
-  "cardImageConfig": {
-    "fit": "cover",
-    "posX": 50,
-    "posY": 52,
-    "scale": 1.1,
-    "boxWidth": "100%",
-    "boxHeight": "270px",
-    "borderRadius": "8px",
-    "padding": "0px",
-    "backgroundColor": "transparent"
-=======
   "headerImage": {
-    "x": 0,
-    "y": 125,
-    "width": 600,
-    "height": 200,
+    "x": 417,
+    "y": 180,
+    "width": 250,
+    "height": 250,
     "src": "",
     "zIndex": 1
->>>>>>> 4c14f13 (banner)
   },
   "hoverBehavior": {
     "enabled": true,
@@ -67,7 +40,7 @@
     "mobileTrigger": "always"
   },
   "heroCards": {
-    "mode": "off",
+    "mode": "scrollReveal",
     "heroShiftPx": 0,
     "gapPx": 32,
     "animationDurationMs": 400,
@@ -102,14 +75,28 @@
   "cards": [
     {
       "id": "card-1",
-      "title": "日常碎碎念",
-      "body": "吃饱了脾气就会很好",
+      "title": "关于我",
+      "body": "一个热爱音乐的虚拟歌手，喜欢和大家分享歌曲！",
       "links": [
         {
-          "id": "link-1766665947939",
-          "url": "https://live.bilibili.com/1916955256",
-          "label": "直播间",
-          "icon": "bilibili",
+          "id": "link-1",
+          "url": "https://twitter.com",
+          "label": "推特",
+          "icon": "twitter",
+          "openInNewTab": true,
+          "styles": {
+            "padding": "6px 12px",
+            "borderRadius": "9999px",
+            "background": "rgba(255,255,255,0.45)",
+            "border": "1px solid rgba(255,255,255,0.35)",
+            "hoverBackground": "rgba(255,255,255,0.60)"
+          }
+        },
+        {
+          "id": "link-2",
+          "url": "https://youtube.com",
+          "label": "油管",
+          "icon": "youtube",
           "openInNewTab": true,
           "styles": {
             "padding": "6px 12px",
@@ -120,10 +107,10 @@
           }
         }
       ],
-      "x": 681,
-      "y": 88,
+      "x": 23,
+      "y": 37,
       "width": 280,
-      "height": 200,
+      "height": 278,
       "zIndex": 10,
       "visible": true,
       "styles": {
@@ -141,13 +128,27 @@
       }
     },
     {
-      "id": "card-1766740872726",
-      "title": "",
-      "body": "",
-      "image": "/uploads/4b606f91-e022-4441-961d-e4a62ca40916.jpg",
-      "links": [],
-      "x": 687,
-      "y": 250,
+      "id": "card-2",
+      "title": "点歌说明",
+      "body": "舰长可以在直播期间点歌哦！",
+      "links": [
+        {
+          "id": "link-3",
+          "url": "https://bilibili.com",
+          "label": "B站",
+          "icon": "bilibili",
+          "openInNewTab": true,
+          "styles": {
+            "padding": "6px 12px",
+            "borderRadius": "9999px",
+            "background": "rgba(255,255,255,0.45)",
+            "border": "1px solid rgba(255,255,255,0.35)",
+            "hoverBackground": "rgba(255,255,255,0.60)"
+          }
+        }
+      ],
+      "x": 907,
+      "y": 46,
       "width": 280,
       "height": 200,
       "zIndex": 10,
