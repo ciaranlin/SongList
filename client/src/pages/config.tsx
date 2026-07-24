@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card as UICard, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Slider } from "@/components/ui/slider";
 import {
   Select,
   SelectContent,
@@ -25,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { 
-  Save, Home, Eye, Palette, Layout, Type, 
+  Save, Home, Eye, Palette, Layout, Type, Sparkles,
   Square, Plus, Trash2, GripVertical, ExternalLink, Settings, Upload, Image, Copy, MessageSquare,
   Heart, Mail, Phone, MapPin, Link2, Share2, Code, Github, Linkedin, Facebook, Instagram, Share, DollarSign
 } from "lucide-react";
@@ -70,12 +71,92 @@ const ICON_OPTIONS = [
   { value: "globe", label: "全球", Icon: undefined },
 ];
 
+const DEFAULT_CARD_IMAGE_CONFIG = {
+  fit: "cover" as const,
+  posX: 50,
+  posY: 50,
+  scale: 1,
+  boxWidth: "100%",
+  boxHeight: "128px",
+  borderRadius: "8px",
+  padding: "0px",
+  backgroundColor: "transparent",
+};
+
+const LAYER_ANIMATION_EFFECTS: Array<{
+  value: NonNullable<SiteConfig["layerAnimation"]>["effect"];
+  label: string;
+}> = [
+  { value: "fade", label: "淡出" },
+  { value: "slideUp", label: "向上退出" },
+  { value: "slideDown", label: "向下退出" },
+  { value: "slideLeft", label: "向左退出" },
+  { value: "slideRight", label: "向右退出" },
+  { value: "scale", label: "缩小退出" },
+  { value: "zoomOut", label: "放大退出" },
+  { value: "rotate", label: "旋转退出" },
+  { value: "flip", label: "翻转退出" },
+  { value: "blur", label: "模糊退出" },
+];
+
+const ANIMATION_PACES = [
+  { value: "cubic-bezier(0.22, 1, 0.36, 1)", label: "柔和", description: "自然减速，适合大多数动画" },
+  { value: "ease-in-out", label: "平滑", description: "慢慢开始，慢慢结束" },
+  { value: "cubic-bezier(0.4, 0, 1, 1)", label: "快速", description: "迅速完成，响应更干脆" },
+  { value: "cubic-bezier(0.34, 1.56, 0.64, 1)", label: "弹性", description: "结束时带轻微回弹" },
+  { value: "linear", label: "匀速", description: "全程保持相同速度" },
+] as const;
+
+function SimpleCardImageEditor({ card, onChange }: { card: Card; onChange: (updates: Partial<Card["imageConfig"]>) => void }) {
+  const config = { ...DEFAULT_CARD_IMAGE_CONFIG, ...card.imageConfig };
+  const height = Math.max(60, Math.min(400, parseInt(config.boxHeight, 10) || 128));
+  return (
+    <div className="pt-3 border-t space-y-5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <Label className="text-sm font-medium">调整图片</Label>
+          <p className="text-xs text-muted-foreground mt-1">拖动滑块即可在右侧实时查看效果</p>
+        </div>
+        <Button variant="ghost" size="sm" className="rounded-lg" onClick={() => onChange(DEFAULT_CARD_IMAGE_CONFIG)}>恢复默认</Button>
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-xs">显示方式</Label>
+        <Select value={config.fit} onValueChange={(fit) => onChange({ fit: fit as "cover" | "contain" })}>
+          <SelectTrigger className="rounded-lg"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="cover">填满图片框</SelectItem>
+            <SelectItem value="contain">完整显示图片</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex justify-between text-xs"><Label>图片框高度</Label><span>{height}px</span></div>
+        <Slider value={[height]} min={60} max={400} step={4} onValueChange={([value]) => onChange({ boxHeight: `${value}px` })} />
+      </div>
+      <div className="space-y-3">
+        <div className="flex justify-between text-xs"><Label>放大 / 缩小</Label><span>{Math.round(config.scale * 100)}%</span></div>
+        <Slider value={[config.scale * 100]} min={50} max={200} step={5} onValueChange={([value]) => onChange({ scale: value / 100 })} />
+      </div>
+      <div className="space-y-3">
+        <div className="flex justify-between text-xs"><Label>左右位置</Label><span>{config.posX < 40 ? "偏左" : config.posX > 60 ? "偏右" : "居中"}</span></div>
+        <Slider value={[config.posX]} min={0} max={100} step={1} onValueChange={([value]) => onChange({ posX: value })} />
+      </div>
+      <div className="space-y-3">
+        <div className="flex justify-between text-xs"><Label>上下位置</Label><span>{config.posY < 40 ? "偏上" : config.posY > 60 ? "偏下" : "居中"}</span></div>
+        <Slider value={[config.posY]} min={0} max={100} step={1} onValueChange={([value]) => onChange({ posY: value })} />
+      </div>
+    </div>
+  );
+}
+
 export default function ConfigPage() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [previewConfig, setPreviewConfig] = useState<SiteConfig>(defaultConfig);
   const [isMobileView, setIsMobileView] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const cardImageInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingImage, setUploadingImage] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -116,6 +197,7 @@ export default function ConfigPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setUploadingImage("avatar");
     const formData = new FormData();
     formData.append("file", file);
 
@@ -126,10 +208,14 @@ export default function ConfigPage() {
         updatePreview("banner", { avatar: data.url });
         toast({ title: "上传成功", description: "头像已更新" });
       } else {
-        throw new Error("Upload failed");
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "上传失败");
       }
-    } catch {
-      toast({ title: "上传失败", description: "上传图片时出错", variant: "destructive" });
+    } catch (error) {
+      toast({ title: "上传失败", description: error instanceof Error ? error.message : "上传图片时出错", variant: "destructive" });
+    } finally {
+      e.target.value = "";
+      setUploadingImage(null);
     }
   };
 
@@ -137,6 +223,7 @@ export default function ConfigPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setUploadingImage(cardId);
     const formData = new FormData();
     formData.append("file", file);
 
@@ -147,10 +234,14 @@ export default function ConfigPage() {
         updateCard(cardId, { image: data.url });
         toast({ title: "上传成功", description: "卡片图片已更新" });
       } else {
-        throw new Error("Upload failed");
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "上传失败");
       }
-    } catch {
-      toast({ title: "上传失败", description: "上传图片时出错", variant: "destructive" });
+    } catch (error) {
+      toast({ title: "上传失败", description: error instanceof Error ? error.message : "上传图片时出错", variant: "destructive" });
+    } finally {
+      e.target.value = "";
+      setUploadingImage(null);
     }
   };
 
@@ -188,8 +279,8 @@ export default function ConfigPage() {
   const addCard = useCallback(() => {
     const newCard: Card = {
       id: `card-${Date.now()}`,
-      title: "新卡片",
-      body: "卡片描述",
+      title: "",
+      body: "",
       links: [],
       styles: {
         padding: "16px",
@@ -297,8 +388,25 @@ export default function ConfigPage() {
     }));
   }, []);
 
+  const handleAreaResizeEnd = useCallback((size: { width: number; height: number }) => {
+    setPreviewConfig(prev => ({
+      ...prev,
+      layout: { ...prev.layout, functionalAreaWidth: size.width, functionalAreaHeight: size.height },
+    }));
+  }, []);
+
+  const handleCardImageChange = useCallback((cardId: string, updates: Partial<Card["imageConfig"]>) => {
+    setPreviewConfig(prev => ({
+      ...prev,
+      cards: prev.cards.map(card => card.id === cardId ? {
+        ...card,
+        imageConfig: { ...DEFAULT_CARD_IMAGE_CONFIG, ...card.imageConfig, ...updates },
+      } : card),
+    }));
+  }, []);
+
   if (!isUnlocked) {
-    return <PasswordGate onUnlock={() => setIsUnlocked(true)} correctPassword={savedConfig.adminPassword} />;
+    return <PasswordGate onUnlock={() => setIsUnlocked(true)} />;
   }
 
   // Defensive defaults
@@ -309,22 +417,26 @@ export default function ConfigPage() {
   const EditorContent = (
     <div className="p-4">
       <Tabs defaultValue="theme" className="w-full">
-        <TabsList className="w-full grid grid-cols-5 mb-4">
+        <TabsList className="w-full grid grid-cols-6 mb-4">
           <TabsTrigger value="theme" className="gap-1 text-xs">
             <Palette className="w-3 h-3" />
-            <span className="hidden sm:inline">主题</span>
+            <span className="hidden sm:inline">外观</span>
           </TabsTrigger>
           <TabsTrigger value="banner" className="gap-1 text-xs">
             <Type className="w-3 h-3" />
-            <span className="hidden sm:inline">横幅</span>
+            <span className="hidden sm:inline">头图</span>
           </TabsTrigger>
           <TabsTrigger value="cards" className="gap-1 text-xs">
             <Square className="w-3 h-3" />
             <span className="hidden sm:inline">卡片</span>
           </TabsTrigger>
+          <TabsTrigger value="animation" className="gap-1 text-xs">
+            <Sparkles className="w-3 h-3" />
+            <span className="hidden sm:inline">动画</span>
+          </TabsTrigger>
           <TabsTrigger value="features" className="gap-1 text-xs">
             <Copy className="w-3 h-3" />
-            <span className="hidden sm:inline">功能</span>
+            <span className="hidden sm:inline">交互</span>
           </TabsTrigger>
           <TabsTrigger value="layout" className="gap-1 text-xs">
             <Layout className="w-3 h-3" />
@@ -366,30 +478,6 @@ export default function ConfigPage() {
             </CardContent>
           </UICard>
 
-          <UICard>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">入口图标</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm">显示配置入口</Label>
-                <Switch checked={previewConfig.entryIcons?.showConfigEntry ?? true} onCheckedChange={(checked) => updatePreview("entryIcons", { showConfigEntry: checked })} data-testid="switch-show-config-entry" />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label className="text-sm">显示歌单入口</Label>
-                <Switch checked={previewConfig.entryIcons?.showYuEntry ?? true} onCheckedChange={(checked) => updatePreview("entryIcons", { showYuEntry: checked })} data-testid="switch-show-yu-entry" />
-              </div>
-            </CardContent>
-          </UICard>
-
-          <UICard>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">管理密码</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Input type="text" value={previewConfig.adminPassword} onChange={(e) => setPreviewConfig(prev => ({ ...prev, adminPassword: e.target.value }))} className="rounded-lg" placeholder="管理密码" data-testid="input-admin-password" />
-            </CardContent>
-          </UICard>
         </TabsContent>
 
         {/* Banner Tab */}
@@ -407,12 +495,16 @@ export default function ConfigPage() {
                     <Image className="w-6 h-6 text-muted-foreground" />
                   </div>
                 )}
-                <div className="flex-1 space-y-2">
-                  <Input type="text" value={previewConfig.banner.avatar} onChange={(e) => updatePreview("banner", { avatar: e.target.value })} className="rounded-lg" placeholder="输入图片URL或上传图片" data-testid="input-avatar-url" />
-                  <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
-                  <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()} className="rounded-lg gap-2">
-                    <Upload className="w-4 h-4" />上传头像
+                <div className="flex-1 flex flex-wrap gap-2">
+                  <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={handleAvatarUpload} className="hidden" />
+                  <Button variant="secondary" size="sm" disabled={uploadingImage !== null} onClick={() => fileInputRef.current?.click()} className="rounded-lg gap-2">
+                    <Upload className="w-4 h-4" />{uploadingImage === "avatar" ? "上传中…" : previewConfig.banner.avatar ? "替换头像" : "上传头像"}
                   </Button>
+                  {previewConfig.banner.avatar && (
+                    <Button variant="ghost" size="sm" onClick={() => updatePreview("banner", { avatar: "" })} className="rounded-lg text-destructive gap-2">
+                      <Trash2 className="w-4 h-4" />清除
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -438,6 +530,10 @@ export default function ConfigPage() {
             </CardContent>
           </UICard>
 
+        </TabsContent>
+
+        {/* Animation Tab */}
+        <TabsContent value="animation" className="space-y-4">
           <UICard>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm">头图卡片展示</CardTitle>
@@ -455,6 +551,76 @@ export default function ConfigPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </CardContent>
+          </UICard>
+
+          <UICard>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">头图退出动画</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">启用头图悬停退出</Label>
+                <Switch checked={previewConfig.layerAnimation?.enabled ?? false} onCheckedChange={(enabled) => setPreviewConfig(prev => ({ ...prev, layerAnimation: { ...(prev.layerAnimation ?? { triggerLayer: 1, targetLayer: 2, effect: "fade", durationMs: 400, easing: "cubic-bezier(0.22, 1, 0.36, 1)" }), enabled } }))} />
+              </div>
+              <p className="text-xs text-muted-foreground rounded-lg bg-muted/60 p-3">
+                鼠标移入头图时，头图播放退出动画并显示下方卡片；鼠标离开后头图自动返回。
+              </p>
+              <div>
+                <Label className="text-sm mb-2 block">显示效果</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {LAYER_ANIMATION_EFFECTS.map((item) => {
+                    const selected = (previewConfig.layerAnimation?.effect ?? "fade") === item.value;
+                    return (
+                      <Button
+                        key={item.value}
+                        type="button"
+                        size="sm"
+                        variant={selected ? "default" : "outline"}
+                        className="justify-start rounded-lg"
+                        onClick={() => setPreviewConfig(prev => ({ ...prev, layerAnimation: { ...prev.layerAnimation, effect: item.value } }))}
+                      >
+                        {item.label}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm mb-2 block">动画时长（毫秒）</Label>
+                <Input type="number" min={0} max={5000} step={50} value={previewConfig.layerAnimation?.durationMs ?? 400} onChange={(e) => setPreviewConfig(prev => ({ ...prev, layerAnimation: { ...prev.layerAnimation, durationMs: Number(e.target.value) } }))} className="rounded-lg" />
+              </div>
+              <div>
+                <Label className="text-sm mb-2 block">动画节奏</Label>
+                <Select
+                  value={previewConfig.layerAnimation?.easing ?? ANIMATION_PACES[0].value}
+                  onValueChange={(easing) => setPreviewConfig(prev => ({ ...prev, layerAnimation: { ...prev.layerAnimation, easing } }))}
+                >
+                  <SelectTrigger className="rounded-lg"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {ANIMATION_PACES.map((pace) => (
+                      <SelectItem key={pace.value} value={pace.value}>
+                        {pace.label} — {pace.description}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </UICard>
+
+          <UICard>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">元素层级</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {previewConfig.cards.map((card, index) => (
+                <div key={card.id} className="flex items-center gap-3">
+                  <Label className="flex-1 text-sm truncate">卡片 {index + 1}：{card.title || "未命名"}</Label>
+                  <Input type="number" min={0} max={999} value={card.zIndex} onChange={(e) => updateCard(card.id, { zIndex: Number(e.target.value) })} className="w-24 rounded-lg" aria-label={`${card.title || `卡片 ${index + 1}`}层级`} />
+                </div>
+              ))}
+              {previewConfig.cards.length === 0 && <p className="text-sm text-muted-foreground">暂无卡片</p>}
             </CardContent>
           </UICard>
 
@@ -501,18 +667,34 @@ export default function ConfigPage() {
                         <Image className="w-6 h-6 text-muted-foreground" />
                       </div>
                     )}
-                    <div className="flex-1 space-y-2">
-                      <Input type="text" value={card.image || ""} onChange={(e) => updateCard(card.id, { image: e.target.value })} className="rounded-lg text-sm" placeholder="输入图片URL或上传图片" data-testid={`input-card-image-${card.id}`} />
-                      <input ref={cardImageInputRef} type="file" accept="image/*" onChange={(e) => handleCardImageUpload(e, card.id)} className="hidden" />
-                      <Button variant="secondary" size="sm" onClick={() => cardImageInputRef.current?.click()} className="rounded-lg gap-2 h-8">
-                        <Upload className="w-3 h-3" />上传图片
+                    <div className="flex-1 flex flex-wrap gap-2">
+                      <input id={`card-image-upload-${card.id}`} type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={(e) => handleCardImageUpload(e, card.id)} className="hidden" />
+                      <Button variant="secondary" size="sm" disabled={uploadingImage !== null} onClick={() => document.getElementById(`card-image-upload-${card.id}`)?.click()} className="rounded-lg gap-2 h-8">
+                        <Upload className="w-3 h-3" />{uploadingImage === card.id ? "上传中…" : card.image ? "替换图片" : "上传图片"}
                       </Button>
+                      {card.image && (
+                        <Button variant="ghost" size="sm" onClick={() => updateCard(card.id, { image: "" })} className="rounded-lg text-destructive gap-2 h-8">
+                          <Trash2 className="w-3 h-3" />清除
+                        </Button>
+                      )}
                     </div>
                   </div>
+                  {card.image && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      右侧直接操作：拖动图片定位，滚轮缩放；拖动图片右边或底边调整尺寸，双击恢复完整显示。
+                    </p>
+                  )}
                 </div>
                 
-                {/* 图片配置 */}
-                {card.image && (
+                {false && card.image && (
+                  <SimpleCardImageEditor
+                    card={card}
+                    onChange={(updates) => updateCard(card.id, { imageConfig: { ...DEFAULT_CARD_IMAGE_CONFIG, ...card.imageConfig, ...updates } })}
+                  />
+                )}
+
+                {/* 旧版高级图片配置保留用于数据兼容，但不再显示 */}
+                {false && card.image && (
                   <div className="pt-2 border-t space-y-3">
                     <Label className="text-sm font-medium block">图片配置</Label>
                     
@@ -903,6 +1085,31 @@ export default function ConfigPage() {
               )}
             </CardContent>
           </UICard>
+
+          <UICard>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">管理入口</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">显示配置入口</Label>
+                <Switch checked={previewConfig.entryIcons?.showConfigEntry ?? true} onCheckedChange={(checked) => updatePreview("entryIcons", { showConfigEntry: checked })} data-testid="switch-show-config-entry" />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">显示歌单入口</Label>
+                <Switch checked={previewConfig.entryIcons?.showYuEntry ?? true} onCheckedChange={(checked) => updatePreview("entryIcons", { showYuEntry: checked })} data-testid="switch-show-yu-entry" />
+              </div>
+            </CardContent>
+          </UICard>
+
+          <UICard>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">管理密码</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Input type="password" value={previewConfig.adminPassword} onChange={(e) => setPreviewConfig(prev => ({ ...prev, adminPassword: e.target.value }))} className="rounded-lg" placeholder="留空则不修改密码" autoComplete="new-password" data-testid="input-admin-password" />
+            </CardContent>
+          </UICard>
         </TabsContent>
 
         {/* Layout Tab */}
@@ -915,6 +1122,16 @@ export default function ConfigPage() {
               <div>
                 <Label className="text-sm mb-2 block">最大宽度</Label>
                 <Input type="text" value={previewConfig.layout.contentMaxWidth} onChange={(e) => updatePreview("layout", { contentMaxWidth: e.target.value })} className="rounded-lg" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-sm mb-2 block">功能区宽度</Label>
+                  <Input type="number" min={240} max={10000} value={previewConfig.layout.functionalAreaWidth ?? 1200} onChange={(e) => updatePreview("layout", { functionalAreaWidth: Number(e.target.value) })} className="rounded-lg" />
+                </div>
+                <div>
+                  <Label className="text-sm mb-2 block">功能区高度</Label>
+                  <Input type="number" min={280} max={1400} value={previewConfig.layout.functionalAreaHeight ?? 450} onChange={(e) => updatePreview("layout", { functionalAreaHeight: Number(e.target.value) })} className="rounded-lg" />
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <Label className="text-sm">对齐表格</Label>
@@ -994,14 +1211,17 @@ export default function ConfigPage() {
       <div className="flex-1 overflow-auto custom-scrollbar" style={{ backgroundColor: previewConfig.theme.background }}>
         <ConfigProvider initialConfig={previewConfig}>
           <div className="flex flex-col items-center min-h-full">
-            <div className="w-full p-2 text-center text-xs text-muted-foreground bg-black/5">
-              实时预览
+            <div className="w-full p-2 flex items-center justify-center gap-2 text-xs text-muted-foreground bg-black/5">
+              <Eye className="w-3.5 h-3.5" />
+              所见即所得实时预览（元素可直接拖动）
             </div>
             <HeroSection 
               config={previewConfig} 
               isMobile={false} 
               onCardDragEnd={handleCardDragEnd}
               onHeaderDragEnd={handleHeaderDragEnd}
+              onAreaResizeEnd={handleAreaResizeEnd}
+              onCardImageChange={handleCardImageChange}
               canDrag={true}
             />
             <FilterBar config={previewConfig} songs={songs} onFilteredSongsChange={() => {}} />
@@ -1014,4 +1234,3 @@ export default function ConfigPage() {
     </div>
   );
 }
-

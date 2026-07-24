@@ -147,7 +147,7 @@ export function SongTable({ config, songs, isLoading }: SongTableProps) {
               <TableHead className="text-sm font-semibold text-foreground w-[15%]">语言</TableHead>
               <TableHead className="text-sm font-semibold text-foreground w-[20%]">备注</TableHead>
               <TableHead className="text-sm font-semibold text-foreground w-[5%] text-center">
-                <Anchor className="w-4 h-4 inline-block" aria-label="舰长可点" />
+                <Anchor className="w-4 h-4 inline-block" aria-label="舰长点歌" />
               </TableHead>
             </TableRow>
           </TableHeader>

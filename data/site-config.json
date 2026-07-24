@@ -19,8 +19,8 @@
     }
   },
   "headerImage": {
-    "x": 426,
-    "y": 115,
+    "x": 371,
+    "y": 76,
     "width": 250,
     "height": 250,
     "src": "",
@@ -46,6 +46,14 @@
     "animationDurationMs": 400,
     "animationEasing": "cubic-bezier(0.4, 0, 0.2, 1)"
   },
+  "layerAnimation": {
+    "enabled": true,
+    "triggerLayer": 1,
+    "targetLayer": 2,
+    "effect": "slideDown",
+    "durationMs": 200,
+    "easing": "cubic-bezier(0.34, 1.56, 0.64, 1)"
+  },
   "heroHotspot": {
     "enabled": true,
     "target": "avatar",
@@ -54,7 +62,7 @@
     "hintText": "移入展开",
     "debounceMs": 120
   },
-  "displayMode": "always",
+  "displayMode": "hoverReveal",
   "copyConfig": {
     "enabled": true,
     "template": "点歌 {songName}",
@@ -75,51 +83,23 @@
   "cards": [
     {
       "id": "card-1",
-      "title": "关于我",
-      "body": "一个热爱音乐的虚拟歌手，喜欢和大家分享歌曲！",
+      "title": "",
+      "body": "",
+      "image": "",
       "imageConfig": {
         "fit": "cover",
-        "posX": 50,
-        "posY": 50,
-        "scale": 1,
+        "posX": 44,
+        "posY": 39,
+        "scale": 1.15,
         "boxWidth": "100%",
-        "boxHeight": "128px",
+        "boxHeight": "200px",
         "borderRadius": "8px",
         "padding": "0px",
         "backgroundColor": "transparent"
       },
-      "links": [
-        {
-          "id": "link-1",
-          "url": "https://qm.qq.com/q/LbIYmXvRmy",
-          "label": "粉丝群",
-          "icon": "qq-line",
-          "openInNewTab": true,
-          "styles": {
-            "padding": "6px 12px",
-            "borderRadius": "9999px",
-            "background": "rgba(255,255,255,0.45)",
-            "border": "1px solid rgba(255,255,255,0.35)",
-            "hoverBackground": "rgba(255,255,255,0.60)"
-          }
-        },
-        {
-          "id": "link-1767665868766",
-          "url": "",
-          "label": "录播组",
-          "icon": "album-fill",
-          "openInNewTab": true,
-          "styles": {
-            "padding": "6px 12px",
-            "borderRadius": "9999px",
-            "background": "rgba(255,255,255,0.45)",
-            "border": "1px solid rgba(255,255,255,0.35)",
-            "hoverBackground": "rgba(255,255,255,0.60)"
-          }
-        }
-      ],
-      "x": 23,
-      "y": 37,
+      "links": [],
+      "x": 20,
+      "y": 55,
       "width": 273,
       "height": 278,
       "zIndex": 10,
@@ -140,9 +120,9 @@
     },
     {
       "id": "card-2",
-      "title": "点歌说明",
-      "body": "舰长可以在直播期间点歌哦！",
-      "image": "/uploads/ead53aab-6177-4edb-a490-64d0668af76d.gif",
+      "title": "",
+      "body": "",
+      "image": "",
       "imageConfig": {
         "fit": "contain",
         "posX": 50,
@@ -154,22 +134,7 @@
         "padding": "0px",
         "backgroundColor": "transparent"
       },
-      "links": [
-        {
-          "id": "link-3",
-          "url": "https://bilibili.com",
-          "label": "B站",
-          "icon": "bilibili",
-          "openInNewTab": true,
-          "styles": {
-            "padding": "6px 12px",
-            "borderRadius": "9999px",
-            "background": "rgba(255,255,255,0.45)",
-            "border": "1px solid rgba(255,255,255,0.35)",
-            "hoverBackground": "rgba(255,255,255,0.60)"
-          }
-        }
-      ],
+      "links": [],
       "x": 793,
       "y": 87,
       "width": 250,
@@ -192,8 +157,8 @@
     },
     {
       "id": "card-1767667775687",
-      "title": "新卡片",
-      "body": "卡片描述",
+      "title": "",
+      "body": "",
       "image": "",
       "imageConfig": {
         "fit": "cover",
@@ -207,8 +172,8 @@
         "backgroundColor": "transparent"
       },
       "links": [],
-      "x": 39,
-      "y": 250,
+      "x": 420,
+      "y": 227,
       "width": 280,
       "height": 200,
       "zIndex": 10,
@@ -232,7 +197,9 @@
     "contentMaxWidth": "1200px",
     "alignWithTable": true,
     "filterBarGap": "12px",
-    "filterBarPadding": "16px"
+    "filterBarPadding": "16px",
+    "functionalAreaWidth": 1200,
+    "functionalAreaHeight": 450
   },
   "responsiveLayout": {
     "desktop": {
@@ -259,5 +226,5 @@
     "searchInputWidth": "220px",
     "spacing": "12px"
   },
-  "adminPassword": "qwe123"
+  "adminPassword": "scrypt$jThUKqAdu9-cNdlu10FzSA$vhNCbIBY1Mz0M8iUixBb91QdD9MTZYkzFCyn4_PEuh4VyWbq0v6GrLCWsuf2NQMUJ-XiKbDoN80GjOwx6ixpYA"
 }

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import { type SiteConfig, defaultConfig } from "@shared/schema";
 
 interface ConfigContextType {
@@ -14,6 +14,10 @@ const ConfigContext = createContext<ConfigContextType | undefined>(undefined);
 export function ConfigProvider({ children, initialConfig }: { children: ReactNode; initialConfig?: SiteConfig }) {
   const [config, setConfigState] = useState<SiteConfig>(initialConfig || defaultConfig);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (initialConfig) setConfigState(initialConfig);
+  }, [initialConfig]);
 
   const setConfig = useCallback((newConfig: SiteConfig) => {
     setConfigState(newConfig);

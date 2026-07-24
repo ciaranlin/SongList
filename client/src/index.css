@@ -210,6 +210,21 @@
     transition: opacity var(--hover-fade-in, 250ms) ease, 
                 visibility var(--hover-fade-in, 250ms) ease;
   }
+
+  [data-testid="hero-section"] .react-draggable-dragging,
+  [data-testid="hero-section"] .react-resizable-resizing {
+    will-change: transform, width, height;
+    transition: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 @layer utilities {

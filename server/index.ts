@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import multer from "multer";
 
 const app = express();
 const httpServer = createServer(app);
@@ -63,11 +64,16 @@ app.use((req, res, next) => {
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    if (res.headersSent) return;
+    if (err instanceof multer.MulterError) {
+      const status = err.code === "LIMIT_FILE_SIZE" ? 413 : 400;
+      res.status(status).json({ error: err.code === "LIMIT_FILE_SIZE" ? "图片不能超过 5MB" : "上传请求无效" });
+      return;
+    }
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    throw err;
+    console.error("Request error:", err);
+    res.status(status).json({ error: message });
   });
 
   // importantly only setup vite in development and after

@@ -7,7 +7,7 @@ import * as path from "path";
 const DATA_DIR = path.join(process.cwd(), "data");
 const CONFIG_FILE = path.join(DATA_DIR, "site-config.json");
 const SONGS_FILE = path.join(DATA_DIR, "songs.json");
-const UPLOADS_DIR = path.join(process.cwd(), "client", "public", "uploads");
+export const UPLOADS_DIR = path.join(DATA_DIR, "uploads");
 
 // Ensure directories exist
 function ensureDirectories() {
@@ -33,7 +33,7 @@ export interface IStorage {
   deleteSong(id: string): Promise<boolean>;
   
   // Upload operations
-  saveUpload(filename: string, buffer: Buffer): Promise<string>;
+  saveUpload(extension: string, buffer: Buffer): Promise<string>;
 }
 
 export class FileStorage implements IStorage {
@@ -120,10 +120,9 @@ export class FileStorage implements IStorage {
   }
 
   // Upload operations
-  async saveUpload(filename: string, buffer: Buffer): Promise<string> {
+  async saveUpload(extension: string, buffer: Buffer): Promise<string> {
     ensureDirectories();
-    const ext = path.extname(filename);
-    const uniqueName = `${randomUUID()}${ext}`;
+    const uniqueName = `${randomUUID()}.${extension}`;
     const filePath = path.join(UPLOADS_DIR, uniqueName);
     
     fs.writeFileSync(filePath, buffer);

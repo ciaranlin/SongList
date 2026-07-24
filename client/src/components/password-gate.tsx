@@ -5,19 +5,21 @@ import { Lock, Eye, EyeOff } from "lucide-react";
 
 interface PasswordGateProps {
   onUnlock: () => void;
-  correctPassword: string;
 }
 
-export function PasswordGate({ onUnlock, correctPassword }: PasswordGateProps) {
+export function PasswordGate({ onUnlock }: PasswordGateProps) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (password === correctPassword) {
+    setIsSubmitting(true);
+    const response = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password }) });
+    if (response.ok) {
+      setPassword("");
       onUnlock();
     } else {
       setError(true);
@@ -25,6 +27,7 @@ export function PasswordGate({ onUnlock, correctPassword }: PasswordGateProps) {
       setTimeout(() => setIsShaking(false), 500);
       setTimeout(() => setError(false), 2000);
     }
+    setIsSubmitting(false);
   };
 
   return (
@@ -95,8 +98,9 @@ export function PasswordGate({ onUnlock, correctPassword }: PasswordGateProps) {
             type="submit" 
             className="w-full h-12 rounded-xl"
             data-testid="button-unlock"
+            disabled={isSubmitting}
           >
-            进入
+            {isSubmitting ? "验证中…" : "进入"}
           </Button>
         </form>
 

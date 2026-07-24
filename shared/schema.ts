@@ -154,6 +154,18 @@ export const heroCardsSchema = z
 
 export type HeroCards = z.infer<typeof heroCardsSchema>;
 
+export const layerAnimationSchema = z.object({
+  enabled: z.boolean().default(false),
+  triggerLayer: z.number().min(0).max(999).default(1),
+  targetLayer: z.number().min(0).max(999).default(2),
+  effect: z.enum([
+    "fade", "slideUp", "slideDown", "slideLeft", "slideRight",
+    "scale", "zoomOut", "rotate", "flip", "blur",
+  ]).default("fade"),
+  durationMs: z.number().min(0).max(5000).default(400),
+  easing: z.string().default("cubic-bezier(0.22, 1, 0.36, 1)"),
+}).default({});
+
 
 
 // Hero hotspot configuration for precise hover trigger
@@ -252,6 +264,7 @@ export const siteConfigSchema = z.object({
   }).default({}),
   cardAnimation: cardAnimationSchema,
   heroCards: heroCardsSchema,
+  layerAnimation: layerAnimationSchema,
   heroHotspot: heroHotspotSchema,
   displayMode: z.enum(["always", "hoverReveal"]).default("always"),
   copyConfig: copyConfigSchema,
@@ -264,6 +277,8 @@ export const siteConfigSchema = z.object({
       alignWithTable: z.boolean().default(true),
       filterBarGap: z.string().default("12px"),
       filterBarPadding: z.string().default("16px"),
+      functionalAreaWidth: z.number().min(240).max(10000).default(1200),
+      functionalAreaHeight: z.number().min(280).max(1400).default(450),
     })
     .default({}),
   // Responsive layout configuration
@@ -275,7 +290,7 @@ export const siteConfigSchema = z.object({
       spacing: z.string().default("12px"),
     })
     .default({}),
-  adminPassword: z.string().default("qwe123"),
+  adminPassword: z.string().default(""),
 });
 
 export type SiteConfig = z.infer<typeof siteConfigSchema>;
@@ -329,6 +344,14 @@ export const defaultConfig: SiteConfig = {
     animationDurationMs: 400,
     animationEasing: "cubic-bezier(0.4, 0, 0.2, 1)",
   },
+  layerAnimation: {
+    enabled: false,
+    triggerLayer: 1,
+    targetLayer: 2,
+    effect: "fade",
+    durationMs: 400,
+    easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+  },
   heroHotspot: {
     enabled: true,
     target: "avatar",
@@ -355,107 +378,14 @@ export const defaultConfig: SiteConfig = {
     showConfigEntry: true,
   },
   displayMode: "always",
-  cards: [
-    {
-      id: "card-1",
-      title: "关于我",
-      body: "一个热爱音乐的虚拟歌手，喜欢和大家分享歌曲！",
-      x: 20,
-      y: 80,
-      width: 280,
-      height: 200,
-      zIndex: 10,
-      visible: true,
-      links: [
-        {
-          id: "link-1",
-          url: "https://twitter.com",
-          label: "推特",
-          icon: "twitter",
-          openInNewTab: true,
-          styles: {
-            padding: "6px 12px",
-            borderRadius: "9999px",
-            background: "rgba(255,255,255,0.45)",
-            border: "1px solid rgba(255,255,255,0.35)",
-            hoverBackground: "rgba(255,255,255,0.60)",
-          },
-        },
-        {
-          id: "link-2",
-          url: "https://youtube.com",
-          label: "油管",
-          icon: "youtube",
-          openInNewTab: true,
-          styles: {
-            padding: "6px 12px",
-            borderRadius: "9999px",
-            background: "rgba(255,255,255,0.45)",
-            border: "1px solid rgba(255,255,255,0.35)",
-            hoverBackground: "rgba(255,255,255,0.60)",
-          },
-        },
-      ],
-      styles: {
-        padding: "16px",
-        borderRadius: "16px",
-        background: "rgba(255,255,255,0.22)",
-        border: "1px solid rgba(255,255,255,0.35)",
-        shadow: "0 4px 16px rgba(0,0,0,0.08)",
-      },
-      typography: {
-        titleSize: "16px",
-        titleWeight: "600",
-        bodySize: "14px",
-        lineHeight: "1.5",
-      },
-    },
-    {
-      id: "card-2",
-      title: "点歌说明",
-      body: "舰长可以在直播期间点歌哦！",
-      x: 320,
-      y: 120,
-      width: 280,
-      height: 200,
-      zIndex: 10,
-      visible: true,
-      links: [
-        {
-          id: "link-3",
-          url: "https://bilibili.com",
-          label: "B站",
-          icon: "bilibili",
-          openInNewTab: true,
-          styles: {
-            padding: "6px 12px",
-            borderRadius: "9999px",
-            background: "rgba(255,255,255,0.45)",
-            border: "1px solid rgba(255,255,255,0.35)",
-            hoverBackground: "rgba(255,255,255,0.60)",
-          },
-        },
-      ],
-      styles: {
-        padding: "16px",
-        borderRadius: "16px",
-        background: "rgba(255,255,255,0.22)",
-        border: "1px solid rgba(255,255,255,0.35)",
-        shadow: "0 4px 16px rgba(0,0,0,0.08)",
-      },
-      typography: {
-        titleSize: "16px",
-        titleWeight: "600",
-        bodySize: "14px",
-        lineHeight: "1.5",
-      },
-    },
-  ],
+  cards: [],
   layout: {
     contentMaxWidth: "1200px",
     alignWithTable: true,
     filterBarGap: "12px",
     filterBarPadding: "16px",
+    functionalAreaWidth: 1200,
+    functionalAreaHeight: 450,
   },
   // Responsive layout configuration
   responsiveLayout: {
@@ -483,7 +413,7 @@ export const defaultConfig: SiteConfig = {
     searchInputWidth: "220px",
     spacing: "12px",
   },
-  adminPassword: "qwe123",
+  adminPassword: "",
 };
 
 // Default songs

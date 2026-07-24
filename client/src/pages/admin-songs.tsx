@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { type Song, type SiteConfig, type InsertSong, defaultConfig, defaultSongs, insertSongSchema } from "@shared/schema";
@@ -36,7 +36,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Home, Save, Plus, Trash2, Pencil, Music, 
-  Anchor, Settings, ListMusic
+  Anchor, Settings, ListMusic, Download, Search, X
 } from "lucide-react";
 import { pinyin } from "pinyin-pro";
 
@@ -77,6 +77,11 @@ export default function AdminSongsPage() {
   const [songs, setSongs] = useState<Song[]>([]);
   const [editingSong, setEditingSong] = useState<Song | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);
+  const [importProvider, setImportProvider] = useState<"netease" | "qq">("netease");
+  const [importSource, setImportSource] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [isMobileView, setIsMobileView] = useState(false);
   const [newSong, setNewSong] = useState<InsertSong>({
     songName: "",
@@ -134,6 +139,45 @@ export default function AdminSongsPage() {
     },
   });
 
+  const importMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/songs/import", { provider: importProvider, source: importSource });
+      return response.json() as Promise<{ imported: number; skipped: number; total: number; songs: Song[] }>;
+    },
+    onSuccess: async (result) => {
+      setIsImportDialogOpen(false);
+      setImportSource("");
+      setSongs(result.songs);
+      queryClient.setQueryData(["/api/songs"], result.songs);
+      toast({ title: `成功导入 ${result.imported} 首`, description: `跳过重复歌曲 ${result.skipped} 首，当前共 ${result.total} 首` });
+    },
+    onError: (error) => toast({ title: "导入失败", description: error instanceof Error ? error.message.replace(/^\d+:\s*/, "") : "无法读取歌单", variant: "destructive" }),
+  });
+
+  const clearMutation = useMutation({
+    mutationFn: () => apiRequest("DELETE", "/api/songs"),
+    onSuccess: async () => {
+      setIsClearDialogOpen(false);
+      setSongs([]);
+      queryClient.setQueryData(["/api/songs"], []);
+      toast({ title: "歌单已清空" });
+    },
+    onError: () => toast({ title: "清空失败", description: "请重新登录后再试", variant: "destructive" }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (songId: string) => apiRequest("DELETE", `/api/songs/${encodeURIComponent(songId)}`),
+    onSuccess: (_response, songId) => {
+      setSongs(current => {
+        const updated = current.filter(song => song.id !== songId);
+        queryClient.setQueryData(["/api/songs"], updated);
+        return updated;
+      });
+      toast({ title: "歌曲已删除" });
+    },
+    onError: () => toast({ title: "删除失败", description: "请重新登录后再试", variant: "destructive" }),
+  });
+
   // Add song with auto-generated pinyin initial for Mandarin songs
   const handleAddSong = () => {
     const id = `song-${Date.now()}`;
@@ -176,18 +220,26 @@ export default function AdminSongsPage() {
 
   // Delete song
   const handleDeleteSong = (songId: string) => {
-    setSongs(prev => prev.filter(s => s.id !== songId));
-    toast({
-      title: "删除成功",
-      description: "别忘了点击保存",
-    });
+    deleteMutation.mutate(songId);
   };
 
   // Check for unsaved changes
   const hasUnsavedChanges = JSON.stringify(songs) !== JSON.stringify(savedSongs);
+  const filteredSongs = useMemo(() => {
+    const keyword = searchQuery.trim().toLocaleLowerCase();
+    if (!keyword) return songs;
+    return songs.filter(song => [
+      song.songName,
+      song.singer,
+      song.language,
+      LANGUAGE_LABELS[song.language],
+      song.remark,
+      song.pinyinInitial,
+    ].some(value => String(value || "").toLocaleLowerCase().includes(keyword)));
+  }, [songs, searchQuery]);
 
   if (!isUnlocked) {
-    return <PasswordGate onUnlock={() => setIsUnlocked(true)} correctPassword={config.adminPassword} />;
+    return <PasswordGate onUnlock={() => setIsUnlocked(true)} />;
   }
 
   return (
@@ -235,6 +287,28 @@ export default function AdminSongsPage() {
               <Plus className="w-4 h-4" />
               {!isMobileView && "添加歌曲"}
             </Button>
+            <Button
+              variant="secondary"
+              size={isMobileView ? "icon" : "default"}
+              disabled={hasUnsavedChanges}
+              onClick={() => setIsImportDialogOpen(true)}
+              className="rounded-xl gap-2"
+              title={hasUnsavedChanges ? "请先保存当前修改" : "导入网易云或 QQ 音乐歌单"}
+            >
+              <Download className="w-4 h-4" />
+              {!isMobileView && "导入歌单"}
+            </Button>
+            <Button
+              variant="ghost"
+              size={isMobileView ? "icon" : "default"}
+              disabled={songs.length === 0 || hasUnsavedChanges}
+              onClick={() => setIsClearDialogOpen(true)}
+              className="rounded-xl gap-2 text-destructive"
+              title={hasUnsavedChanges ? "请先保存当前修改" : "清空全部歌曲"}
+            >
+              <Trash2 className="w-4 h-4" />
+              {!isMobileView && "清空"}
+            </Button>
             <Button 
               onClick={() => saveMutation.mutate(songs)}
               disabled={saveMutation.isPending || !hasUnsavedChanges}
@@ -251,6 +325,22 @@ export default function AdminSongsPage() {
 
       {/* Content */}
       <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        <div className="mb-4 h-11 flex items-center gap-2 rounded-xl border bg-white/80 px-3 focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+          <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          <Input
+            type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="搜索歌名、歌手、语言、备注或首字母…"
+            className="h-full flex-1 border-0 bg-transparent p-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+            aria-label="搜索歌单"
+          />
+          {searchQuery && (
+            <Button variant="ghost" size="icon" onClick={() => setSearchQuery("")} className="h-8 w-8 flex-shrink-0 rounded-lg" aria-label="清除搜索">
+              <X className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
         <div 
           className="rounded-2xl overflow-hidden"
           style={{ 
@@ -263,7 +353,7 @@ export default function AdminSongsPage() {
               <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4" />
               <p className="text-muted-foreground">加载中...</p>
             </div>
-          ) : songs.length === 0 ? (
+          ) : filteredSongs.length === 0 ? (
             <div className="p-12 sm:p-16 text-center">
               <div 
                 className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mx-auto mb-4"
@@ -271,20 +361,20 @@ export default function AdminSongsPage() {
               >
                 <Music className="w-8 h-8 sm:w-10 sm:h-10 text-muted-foreground" />
               </div>
-              <p className="text-lg font-medium mb-1">暂无歌曲</p>
-              <p className="text-muted-foreground mb-4">添加第一首歌曲开始</p>
-              <Button 
-                onClick={() => setIsAddDialogOpen(true)}
-                className="rounded-xl gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                添加歌曲
-              </Button>
+              <p className="text-lg font-medium mb-1">{songs.length === 0 ? "暂无歌曲" : "没有匹配的歌曲"}</p>
+              <p className="text-muted-foreground mb-4">{songs.length === 0 ? "添加第一首歌曲开始" : "尝试其他关键词"}</p>
+              {songs.length === 0 ? (
+                <Button onClick={() => setIsAddDialogOpen(true)} className="rounded-xl gap-2">
+                  <Plus className="w-4 h-4" />添加歌曲
+                </Button>
+              ) : (
+                <Button variant="secondary" onClick={() => setSearchQuery("")} className="rounded-xl">清除搜索</Button>
+              )}
             </div>
           ) : isMobileView ? (
             // Mobile card view
             <div className="p-3 space-y-3">
-              {songs.map((song) => (
+              {filteredSongs.map((song) => (
                 <div 
                   key={song.id}
                   className="p-4 rounded-xl border"
@@ -310,6 +400,7 @@ export default function AdminSongsPage() {
                         variant="ghost" 
                         size="icon"
                         onClick={() => handleDeleteSong(song.id)}
+                        disabled={deleteMutation.isPending}
                         className="rounded-lg text-destructive h-8 w-8"
                         data-testid={`button-delete-${song.id}`}
                       >
@@ -346,13 +437,13 @@ export default function AdminSongsPage() {
                     <TableHead className="w-[5%] text-center">首字母</TableHead>
                     <TableHead className="w-[18%]">备注</TableHead>
                     <TableHead className="w-[5%] text-center">
-                      <Anchor className="w-4 h-4 inline-block" aria-label="舰长可点" />
+                      <Anchor className="w-4 h-4 inline-block" aria-label="舰长点歌" />
                     </TableHead>
                     <TableHead className="w-[10%] text-right">操作</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {songs.map((song) => (
+                  {filteredSongs.map((song) => (
                     <TableRow 
                       key={song.id}
                       className="hover-elevate"
@@ -390,6 +481,7 @@ export default function AdminSongsPage() {
                             variant="ghost" 
                             size="icon"
                             onClick={() => handleDeleteSong(song.id)}
+                            disabled={deleteMutation.isPending}
                             className="rounded-lg text-destructive"
                             data-testid={`button-delete-${song.id}`}
                           >
@@ -406,11 +498,58 @@ export default function AdminSongsPage() {
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-4">
-          共 {songs.length} 首歌曲
+          {searchQuery ? `找到 ${filteredSongs.length} 首，共 ${songs.length} 首歌曲` : `共 ${songs.length} 首歌曲`}
         </p>
       </div>
 
       {/* Add Song Dialog */}
+      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+        <DialogContent className="rounded-2xl max-w-[95vw] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>导入在线歌单</DialogTitle>
+            <DialogDescription>支持公开的网易云音乐和 QQ 音乐歌单，重复歌曲会自动跳过。</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label className="text-sm mb-2 block">音乐平台</Label>
+              <Select value={importProvider} onValueChange={(value) => setImportProvider(value as "netease" | "qq")}>
+                <SelectTrigger className="rounded-lg"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="netease">网易云音乐</SelectItem>
+                  <SelectItem value="qq">QQ 音乐</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm mb-2 block">歌单链接或 ID</Label>
+              <Input value={importSource} onChange={(event) => setImportSource(event.target.value)} className="rounded-lg" placeholder="粘贴公开歌单链接或输入歌单 ID" autoFocus />
+            </div>
+            <p className="text-xs text-muted-foreground">系统会自动识别国语、日语和英语，并生成歌曲首字母；识别结果可在导入后调整。</p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="secondary" onClick={() => setIsImportDialogOpen(false)} className="rounded-lg">取消</Button>
+            <Button disabled={!importSource.trim() || importMutation.isPending} onClick={() => importMutation.mutate()} className="rounded-lg gap-2">
+              <Download className="w-4 h-4" />{importMutation.isPending ? "导入中…" : "开始导入"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isClearDialogOpen} onOpenChange={setIsClearDialogOpen}>
+        <DialogContent className="rounded-2xl max-w-[95vw] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>确认清空歌单？</DialogTitle>
+            <DialogDescription>将永久删除当前全部 {songs.length} 首歌曲，此操作无法撤销。</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="secondary" onClick={() => setIsClearDialogOpen(false)} className="rounded-lg">取消</Button>
+            <Button variant="destructive" disabled={clearMutation.isPending} onClick={() => clearMutation.mutate()} className="rounded-lg">
+              {clearMutation.isPending ? "清空中…" : "确认清空"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="rounded-2xl max-w-[95vw] sm:max-w-md">
           <DialogHeader>
@@ -479,7 +618,7 @@ export default function AdminSongsPage() {
               />
             </div>
             <div className="flex items-center justify-between">
-              <Label className="text-sm">舰长可点</Label>
+              <Label className="text-sm">舰长点歌</Label>
               <Switch
                 checked={newSong.captainRequestable}
                 onCheckedChange={(checked) => setNewSong(prev => ({ ...prev, captainRequestable: checked }))}
@@ -574,7 +713,7 @@ export default function AdminSongsPage() {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <Label className="text-sm">舰长可点</Label>
+                <Label className="text-sm">舰长点歌</Label>
                 <Switch
                   checked={editingSong.captainRequestable}
                   onCheckedChange={(checked) => setEditingSong(prev => prev ? { ...prev, captainRequestable: checked } : null)}
