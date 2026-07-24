@@ -180,7 +180,19 @@ export async function registerRoutes(
   app.get("/api/songs", async (req, res) => {
     try {
       const songs = await storage.getSongs();
-      res.json(songs);
+      res.set("Cache-Control", "private, no-cache");
+      if (req.query.compact === "1") {
+        return res.json(songs.map(song => ({
+          id: song.id,
+          songName: song.songName,
+          singer: song.singer,
+          language: song.language,
+          ...(song.remark ? { remark: song.remark } : {}),
+          ...(song.captainRequestable ? { captainRequestable: true } : {}),
+          ...(song.pinyinInitial ? { pinyinInitial: song.pinyinInitial } : {}),
+        })));
+      }
+      return res.json(songs);
     } catch (error) {
       console.error("Error fetching songs:", error);
       res.status(500).json({ error: "Failed to fetch songs" });
@@ -237,7 +249,7 @@ export async function registerRoutes(
         };
       });
       const savedSongs = await storage.saveSongs([...existing, ...additions]);
-      return res.json({ imported: additions.length, skipped: imported.length - additions.length, total: savedSongs.length, songs: savedSongs });
+      return res.json({ imported: additions.length, skipped: imported.length - additions.length, total: savedSongs.length });
     } catch (error) {
       if (error instanceof z.ZodError) return res.status(400).json({ error: "导入参数无效" });
       console.error("Playlist import failed:", error);

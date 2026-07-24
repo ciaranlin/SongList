@@ -171,7 +171,7 @@ export default function ConfigPage() {
   });
 
   const { data: songs = defaultSongs } = useQuery<Song[]>({
-    queryKey: ["/api/songs"],
+    queryKey: ["/api/songs?compact=1"],
   });
 
   useEffect(() => {

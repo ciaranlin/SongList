@@ -108,7 +108,7 @@ export default function AdminSongsPage() {
 
   // Fetch songs
   const { data: savedSongs = defaultSongs, isLoading } = useQuery<Song[]>({
-    queryKey: ["/api/songs"],
+    queryKey: ["/api/songs?compact=1"],
   });
 
   // Initialize local songs state
@@ -124,7 +124,7 @@ export default function AdminSongsPage() {
       return apiRequest("PUT", "/api/songs", songsToSave);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/songs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/songs?compact=1"] });
       toast({
         title: "保存成功",
         description: "歌单已保存",
@@ -142,13 +142,12 @@ export default function AdminSongsPage() {
   const importMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/songs/import", { provider: importProvider, source: importSource });
-      return response.json() as Promise<{ imported: number; skipped: number; total: number; songs: Song[] }>;
+      return response.json() as Promise<{ imported: number; skipped: number; total: number }>;
     },
     onSuccess: async (result) => {
       setIsImportDialogOpen(false);
       setImportSource("");
-      setSongs(result.songs);
-      queryClient.setQueryData(["/api/songs"], result.songs);
+      await queryClient.invalidateQueries({ queryKey: ["/api/songs?compact=1"] });
       toast({ title: `成功导入 ${result.imported} 首`, description: `跳过重复歌曲 ${result.skipped} 首，当前共 ${result.total} 首` });
     },
     onError: (error) => toast({ title: "导入失败", description: error instanceof Error ? error.message.replace(/^\d+:\s*/, "") : "无法读取歌单", variant: "destructive" }),
@@ -159,7 +158,7 @@ export default function AdminSongsPage() {
     onSuccess: async () => {
       setIsClearDialogOpen(false);
       setSongs([]);
-      queryClient.setQueryData(["/api/songs"], []);
+      queryClient.setQueryData(["/api/songs?compact=1"], []);
       toast({ title: "歌单已清空" });
     },
     onError: () => toast({ title: "清空失败", description: "请重新登录后再试", variant: "destructive" }),
@@ -170,7 +169,7 @@ export default function AdminSongsPage() {
     onSuccess: (_response, songId) => {
       setSongs(current => {
         const updated = current.filter(song => song.id !== songId);
-        queryClient.setQueryData(["/api/songs"], updated);
+        queryClient.setQueryData(["/api/songs?compact=1"], updated);
         return updated;
       });
       toast({ title: "歌曲已删除" });

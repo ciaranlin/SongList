@@ -36,7 +36,7 @@ export default function Home() {
 
   // Fetch songs from API
   const { data: songs = defaultSongs, isLoading: songsLoading } = useQuery<Song[]>({
-    queryKey: ["/api/songs"],
+    queryKey: ["/api/songs?compact=1"],
   });
 
   // Initialize filtered songs when songs load
