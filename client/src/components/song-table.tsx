@@ -16,6 +16,7 @@ interface SongTableProps {
   config: SiteConfig;
   songs: Song[];
   isLoading?: boolean;
+  isMobile: boolean;
 }
 
 const LANGUAGE_LABELS: Record<Song["language"], string> = {
@@ -50,7 +51,7 @@ function LoadingSkeleton() {
   );
 }
 
-export function SongTable({ config, songs, isLoading }: SongTableProps) {
+export function SongTable({ config, songs, isLoading, isMobile }: SongTableProps) {
   const { toast } = useToast();
   
   // Defensive defaults for copyConfig
@@ -137,8 +138,8 @@ export function SongTable({ config, songs, isLoading }: SongTableProps) {
       }}
       data-testid="song-table"
     >
-      {/* Desktop Table */}
-      <div className="hidden md:block overflow-x-auto">
+      {!isMobile ? (
+      <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="border-b" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
@@ -210,9 +211,8 @@ export function SongTable({ config, songs, isLoading }: SongTableProps) {
           </TableBody>
         </Table>
       </div>
-
-      {/* Mobile Card List */}
-      <div className="md:hidden p-3 space-y-3">
+      ) : (
+      <div className="p-3 space-y-3">
         {songs.map((song) => (
           <div
             key={song.id}
@@ -259,6 +259,7 @@ export function SongTable({ config, songs, isLoading }: SongTableProps) {
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }

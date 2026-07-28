@@ -206,7 +206,8 @@ export default function ConfigPage() {
       if (response.ok) {
         const data = await response.json();
         updatePreview("banner", { avatar: data.url });
-        toast({ title: "上传成功", description: "头像已更新" });
+        const savedPercent = data.compressed ? Math.max(1, Math.round((1 - data.size / data.originalSize) * 100)) : 0;
+        toast({ title: "上传成功", description: savedPercent ? `头像已更新，图片已压缩 ${savedPercent}%` : "头像已更新" });
       } else {
         const data = await response.json().catch(() => ({}));
         throw new Error(data.error || "上传失败");
@@ -232,7 +233,8 @@ export default function ConfigPage() {
       if (response.ok) {
         const data = await response.json();
         updateCard(cardId, { image: data.url });
-        toast({ title: "上传成功", description: "卡片图片已更新" });
+        const savedPercent = data.compressed ? Math.max(1, Math.round((1 - data.size / data.originalSize) * 100)) : 0;
+        toast({ title: "上传成功", description: savedPercent ? `卡片图片已更新，图片已压缩 ${savedPercent}%` : "卡片图片已更新" });
       } else {
         const data = await response.json().catch(() => ({}));
         throw new Error(data.error || "上传失败");
@@ -1226,7 +1228,7 @@ export default function ConfigPage() {
             />
             <FilterBar config={previewConfig} songs={songs} onFilteredSongsChange={() => {}} />
             <div className="w-full px-4 pb-8 flex justify-center" style={{ maxWidth: previewConfig.layout.contentMaxWidth }}>
-              <SongTable config={previewConfig} songs={songs.slice(0, 5)} />
+              <SongTable config={previewConfig} songs={songs.slice(0, 5)} isMobile={isMobileView} />
             </div>
           </div>
         </ConfigProvider>

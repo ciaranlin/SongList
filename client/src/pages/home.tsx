@@ -122,6 +122,7 @@ export default function Home() {
               config={config}
               songs={filteredSongs}
               isLoading={songsLoading}
+              isMobile={isMobile}
             />
           </div>
         </div>

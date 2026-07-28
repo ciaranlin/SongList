@@ -4,6 +4,7 @@ import { storage, UPLOADS_DIR } from "./storage";
 import { siteConfigSchema, songSchema } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
+import sharp from "sharp";
 import { randomUUID } from "crypto";
 import { pinyin } from "pinyin-pro";
 import { clearSessionCookie, createSession, hashPassword, isAuthenticated, requireAuth, setSessionCookie, verifyPassword } from "./auth";
@@ -36,6 +37,53 @@ function detectImageExtension(buffer: Buffer): "jpg" | "png" | "gif" | "webp" | 
   if (buffer.length >= 6 && ["GIF87a", "GIF89a"].includes(buffer.subarray(0, 6).toString("ascii"))) return "gif";
   if (buffer.length >= 12 && buffer.subarray(0, 4).toString("ascii") === "RIFF" && buffer.subarray(8, 12).toString("ascii") === "WEBP") return "webp";
   return null;
+}
+
+async function optimizeUploadedImage(buffer: Buffer, extension: "jpg" | "png" | "gif" | "webp") {
+  if (extension === "gif") {
+    const animation = sharp(buffer, { animated: true, limitInputPixels: 40_000_000 });
+    const metadata = await animation.metadata();
+    try {
+      const optimized = await animation
+        .resize({
+          width: Math.min(metadata.width || 1920, 1920),
+          withoutEnlargement: true,
+        })
+        .webp({
+          quality: 76,
+          alphaQuality: 85,
+          effort: 4,
+          loop: metadata.loop,
+          delay: metadata.delay,
+        })
+        .toBuffer();
+
+      if (optimized.length < buffer.length) {
+        return { buffer: optimized, extension: "webp" as const, compressed: true };
+      }
+    } catch (error) {
+      console.warn("Animated GIF compression skipped:", error instanceof Error ? error.message : error);
+    }
+
+    return { buffer, extension, compressed: false };
+  }
+
+  const optimized = await sharp(buffer, { limitInputPixels: 40_000_000 })
+    .rotate()
+    .resize({
+      width: 1920,
+      height: 1920,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .webp({ quality: 82, alphaQuality: 90, effort: 4 })
+    .toBuffer();
+
+  if (optimized.length >= buffer.length) {
+    return { buffer, extension, compressed: false };
+  }
+
+  return { buffer: optimized, extension: "webp" as const, compressed: true };
 }
 
 function extractPlaylistId(source: string): string | null {
@@ -336,8 +384,14 @@ export async function registerRoutes(
         res.status(400).json({ error: "图片内容无效，仅支持 JPEG、PNG、GIF 和 WebP" });
         return;
       }
-      const publicUrl = await storage.saveUpload(extension, req.file.buffer);
-      res.json({ url: publicUrl });
+      const optimized = await optimizeUploadedImage(req.file.buffer, extension);
+      const publicUrl = await storage.saveUpload(optimized.extension, optimized.buffer);
+      res.json({
+        url: publicUrl,
+        compressed: optimized.compressed,
+        originalSize: req.file.buffer.length,
+        size: optimized.buffer.length,
+      });
     } catch (error) {
       console.error("Error uploading file:", error);
       res.status(500).json({ error: "Failed to upload file" });
